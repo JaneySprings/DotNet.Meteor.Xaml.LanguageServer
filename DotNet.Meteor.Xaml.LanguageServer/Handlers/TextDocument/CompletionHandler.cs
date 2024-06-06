@@ -1,4 +1,5 @@
 using Avalonia.Ide.CompletionEngine;
+using DotNet.Meteor.Xaml.LanguageServer.Extensions;
 using DotNet.Meteor.Xaml.LanguageServer.Services;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
@@ -24,7 +25,6 @@ public class CompletionHandler : CompletionHandlerBase {
             ResolveProvider = false,
         };
     }
-
     public override async Task<CompletionList> Handle(CompletionParams request, CancellationToken cancellationToken) {
         string? text = workspaceService.BufferService.GetTextTillPosition(request.TextDocument.Uri, request.Position);
         if (text == null)
@@ -40,8 +40,9 @@ public class CompletionHandler : CompletionHandlerBase {
             .Select(p => new CompletionItem {
                 Label = p.DisplayText,
                 Detail = p.Description,
-                InsertText = p.InsertText,
-                Kind = GetCompletionItemKind(p.Kind),
+                InsertText = p.InsertText.Insert(p.RecommendedCursorOffset ?? p.InsertText.Length, "$0"),
+                InsertTextFormat = InsertTextFormat.Snippet,
+                Kind = p.Kind.ToCompletionItemKind(),
             });
 
         return completions == null
@@ -61,23 +62,4 @@ public class CompletionHandler : CompletionHandlerBase {
 
         return workspaceService.CompletionMetadata;
     }
-    private static CompletionItemKind GetCompletionItemKind(CompletionKind completionKind) {
-        string name = Enum.GetName(completionKind) ?? string.Empty;
-
-        var result = name switch {
-            _ when name.Contains("Property") || name.Contains("AttachedProperty") => CompletionItemKind.Property,
-            _ when name.Contains("Event") => CompletionItemKind.Event,
-            _ when name.Contains("Namespace") || name.Contains("VS_XMLNS") => CompletionItemKind.Module,
-            _ when name.Contains("MarkupExtension") => CompletionItemKind.Class,
-            _ => GetRest(name)
-        };
-
-        return result;
-
-        static CompletionItemKind GetRest(string enumName) {
-            bool success = Enum.TryParse(enumName, out CompletionItemKind kind);
-            return success ? kind : CompletionItemKind.Text;
-        }
-    }
-
 }
