@@ -1,0 +1,10 @@
+/**/[Bb]in
+/**/[Oo]bj
+/tools
+/binaries
+/artifacts
+/extension
+
+package-lock.json
+node_modules
+.DS_Store
