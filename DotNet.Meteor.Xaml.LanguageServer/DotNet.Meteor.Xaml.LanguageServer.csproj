@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RollForward>Major</RollForward>
     <Nullable>enable</Nullable>
-		<SelfContained>true</SelfContained>
+		<SelfContained>false</SelfContained>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
@@ -16,5 +16,8 @@
   <ItemGroup>
     <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9" />
     <PackageReference Include="NLog" Version="5.2.4" />
+
+     <ProjectReference Include="..\Avalonia.Ide.CompletionEngine.DnlibMetadataProvider\Avalonia.Ide.CompletionEngine.DnlibMetadataProvider.csproj" />
+      <ProjectReference Include="..\Avalonia.Ide.CompletionEngine\Avalonia.Ide.CompletionEngine.csproj" />
   </ItemGroup>
 </Project>

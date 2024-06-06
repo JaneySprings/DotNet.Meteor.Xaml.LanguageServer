@@ -16,7 +16,7 @@ public class LanguageServer {
             .AddDefaultLoggingProvider()
             .WithInput(Console.OpenStandardInput())
             .WithOutput(Console.OpenStandardOutput())
-            .WithServices(services => services
+            // .WithServices(services => services
                 // .AddSingleton<WorkspaceService>()
                 // .AddSingleton<CodeAnalysisService>()
                 // .AddSingleton<DecompilationService>())
@@ -46,25 +46,25 @@ public class LanguageServer {
     }
     private static async Task StartedHandlerAsync(ILanguageServer server, string[] targets) {
         var clientSettings = server.Workspace.ClientSettings;
-        var configurationService = server.Services.GetService<ConfigurationService>()!;
-        var workspaceService = server.Services.GetService<WorkspaceService>()!;
+        // var configurationService = server.Services.GetService<ConfigurationService>()!;
+        // var workspaceService = server.Services.GetService<WorkspaceService>()!;
 
         CurrentSessionLogger.Debug($"Server created with targets: {string.Join(", ", targets)}");
         ObserveClientProcess(clientSettings.ProcessId);
 
-        await configurationService.InitializeAsync().ConfigureAwait(false);
-        workspaceService.InitializeWorkspace(_ => server.ShowError(Resources.DotNetRegistrationFailed));
+        // await configurationService.InitializeAsync().ConfigureAwait(false);
+        // workspaceService.InitializeWorkspace(_ => server.ShowError(Resources.DotNetRegistrationFailed));
 
-        if (targets.Length != 0)
-            workspaceService.AddTargets(targets);
-        else if (configurationService.ProjectFiles.Count != 0)
-            workspaceService.AddTargets(configurationService.ProjectFiles);
-        else {
-            var workspaceFolders = server.ClientSettings.WorkspaceFolders?.Select(it => it.Uri.GetFileSystemPath());
-            workspaceService.FindTargetsInWorkspace(workspaceFolders);
-        }
+        // if (targets.Length != 0)
+        //     workspaceService.AddTargets(targets);
+        // else if (configurationService.ProjectFiles.Count != 0)
+        //     workspaceService.AddTargets(configurationService.ProjectFiles);
+        // else {
+        //     var workspaceFolders = server.ClientSettings.WorkspaceFolders?.Select(it => it.Uri.GetFileSystemPath());
+        //     workspaceService.FindTargetsInWorkspace(workspaceFolders);
+        // }
 
-        _ = workspaceService.LoadSolutionAsync(CancellationToken.None);
+        // _ = workspaceService.LoadSolutionAsync(CancellationToken.None);
     }
     private static void ObserveClientProcess(long? pid) {
         if (pid == null || pid <= 0)
