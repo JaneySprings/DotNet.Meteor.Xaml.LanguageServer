@@ -21,7 +21,7 @@ public enum CompletionKind
     /// Properties from DataContexts (view models), specifically this is for VS
     /// to use a different icon from normal properties
     /// </summary>
-    DataProperty = 0x200,
+    DataProperty = 0x300,
 
     /// <summary>
     /// Classes when listed from TargetType or Selector, specfically for VS to use

@@ -284,7 +284,7 @@ public class CompletionEngine
                     .Where(kvp => !kvp.Value.IsAbstract)
                     .Select(kvp =>
                         {
-                            var ci = GetElementCompletationInfo(kvp.Key, kvp.Value);
+                            var ci = GetElementCompletationInfo(kvp.Key, kvp.Value, tagName);
                             return new Completion(ci.DisplayText, ci.InsertText, CompletionKind.Class)
                             {
                                 RecommendedCursorOffset = ci.RecommendedCursorOffset,
@@ -562,12 +562,13 @@ public class CompletionEngine
     }
 
     static ElementCompletationInfo GetElementCompletationInfo(string key,
-        MetadataType? type)
+        MetadataType? type, string originalKey)
     {
         var xamlName = key;
         var insretText = xamlName;
         var recommendedCursorOffset = default(int?);
         var triggerCompletionAfterInsert = false;
+        var hasExplicitNamespace = originalKey.Contains(':');
         if (type is not null)
         {
             if (type.IsMarkupExtension)
@@ -620,6 +621,10 @@ public class CompletionEngine
                 }
             }
         }
+
+        if (hasExplicitNamespace)
+            insretText = insretText.Substring(insretText.LastIndexOf(':') + 1);
+
         return new (xamlName, insretText, default, recommendedCursorOffset, triggerCompletionAfterInsert);
     }
 
@@ -633,7 +638,7 @@ public class CompletionEngine
         // Won't show suggestions (or incorrect ones), because the else clause below will fail
         // to find a type in that selector and we don't search up the Xml tree
         string? selectorTypeName = null;
-        if (state.GetParentTagName(1)?.Equals("ControlTheme") == true)
+        if (state.GetParentTagName(1)?.Equals("Style") == true)
         {
             selectorTypeName = state.FindParentAttributeValue("TargetType", 1, maxLevels: 0);
         }
@@ -728,7 +733,7 @@ public class CompletionEngine
         }
     }
 
-    private IEnumerable<Completion> FilterHintValuesForBindingPath(MetadataType bindingPathType, string? entered, string? currentAssemblyName, string? fullText, XmlParser state)
+    private IEnumerable<Completion> FilterHintValuesForBindingPath(string? entered, string? currentAssemblyName, string? fullText, XmlParser state)
     {
         IEnumerable<Completion> forPropertiesFromType(MetadataType? filterType, string? filter, Func<string, string>? fmtInsertText = null)
         {
@@ -830,16 +835,19 @@ public class CompletionEngine
         return forPropertiesFromType(mdType, values[i], p => $"{string.Join(".", values.Take(i).ToArray())}.{p}");
     }
 
-    private List<Completion> GetHintCompletions(MetadataType type, string? entered, string? currentAssemblyName = null, string? fullText = null, XmlParser? state = null)
+    private List<Completion> GetHintCompletions(MetadataType? type, string? entered, string? currentAssemblyName = null, string? fullText = null, XmlParser? state = null)
     {
-        var kind = GetCompletionKindForHintValues(type);
-
-        var completions = FilterHintValues(type, entered, currentAssemblyName, state)
-            .Select(val => new Completion(val, kind)).ToList();
-
-        if (type.FullName == "{BindingPath}" && state != null)
+        var completions = new List<Completion>();
+        if (type != null)
         {
-            completions.AddRange(FilterHintValuesForBindingPath(type, entered, currentAssemblyName, fullText, state));
+            var kind = GetCompletionKindForHintValues(type);
+            completions.AddRange(FilterHintValues(type, entered, currentAssemblyName, state)
+                .Select(val => new Completion(val, kind)).ToList());
+        }
+
+        if (type == null && state != null)
+        {
+            completions.AddRange(FilterHintValuesForBindingPath(entered, currentAssemblyName, fullText, state));
         }
         return completions;
     }
@@ -966,8 +974,8 @@ public class CompletionEngine
             }
             else
             {
-                var defaultProp = t?.Properties.FirstOrDefault(p => string.IsNullOrEmpty(p.Name));
-                if (defaultProp?.Type?.HasHintValues ?? false)
+                var defaultProp = t?.Properties.FirstOrDefault(p => p.Type == null);
+                if (defaultProp != null)
                 {
                     completions.AddRange(GetHintCompletions(defaultProp.Type, ext.AttributeName ?? "", currentAssemblyName, fullText, state));
                 }
@@ -988,7 +996,7 @@ public class CompletionEngine
                 prop = Helper.LookupProperty(transformedName, ext.AttributeName);
             }
 
-            if (prop?.Type?.HasHintValues == true)
+            if (prop?.Type == null || prop?.Type?.HasHintValues == true)
             {
                 var start = data.Substring(ext.CurrentValueStart);
                 completions.AddRange(GetHintCompletions(prop.Type, start, currentAssemblyName, fullText, state));

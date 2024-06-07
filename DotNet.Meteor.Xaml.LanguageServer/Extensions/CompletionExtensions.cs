@@ -16,7 +16,7 @@ public static class CompletionExtensions {
             CompletionKind.MarkupExtension => CompletionItemKind.Interface,
             CompletionKind.Event => CompletionItemKind.Event,
             CompletionKind.AttachedEvent => CompletionItemKind.Event,
-            //CompletionKind.DataProperty => CompletionItemKind.Property,
+            CompletionKind.DataProperty => CompletionItemKind.Property,
             CompletionKind.TargetTypeClass => CompletionItemKind.Class,
             CompletionKind.VS_XMLNS => CompletionItemKind.Module,
             CompletionKind.Selector => CompletionItemKind.Module,
