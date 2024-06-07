@@ -284,7 +284,7 @@ public class CompletionEngine
                     .Where(kvp => !kvp.Value.IsAbstract)
                     .Select(kvp =>
                         {
-                            var ci = GetElementCompletationInfo(kvp.Key, kvp.Value, tagName);
+                            var ci = GetElementCompletationInfo(kvp.Key, kvp.Value);
                             return new Completion(ci.DisplayText, ci.InsertText, CompletionKind.Class)
                             {
                                 RecommendedCursorOffset = ci.RecommendedCursorOffset,
@@ -562,13 +562,12 @@ public class CompletionEngine
     }
 
     static ElementCompletationInfo GetElementCompletationInfo(string key,
-        MetadataType? type, string originalKey)
+        MetadataType? type)
     {
         var xamlName = key;
         var insretText = xamlName;
         var recommendedCursorOffset = default(int?);
         var triggerCompletionAfterInsert = false;
-        var hasExplicitNamespace = originalKey.Contains(':');
         if (type is not null)
         {
             if (type.IsMarkupExtension)
@@ -621,10 +620,6 @@ public class CompletionEngine
                 }
             }
         }
-
-        if (hasExplicitNamespace)
-            insretText = insretText.Substring(insretText.LastIndexOf(':') + 1);
-
         return new (xamlName, insretText, default, recommendedCursorOffset, triggerCompletionAfterInsert);
     }
 
