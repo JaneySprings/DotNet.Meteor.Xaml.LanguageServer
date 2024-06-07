@@ -6,13 +6,13 @@ namespace DotNet.Meteor.Xaml.LanguageServer.Extensions;
 public static class CompletionExtensions {
     public static CompletionItemKind ToCompletionItemKind(this CompletionKind completionKind) {
         return completionKind switch {
-            CompletionKind.Comment => CompletionItemKind.Snippet,
+            CompletionKind.Snippet => CompletionItemKind.Snippet,
             CompletionKind.Class => CompletionItemKind.Class,
             CompletionKind.Property => CompletionItemKind.Property,
             CompletionKind.AttachedProperty => CompletionItemKind.Property,
-            CompletionKind.StaticProperty => CompletionItemKind.Property,
+            CompletionKind.StaticProperty => CompletionItemKind.Field,
             CompletionKind.Namespace => CompletionItemKind.Module,
-            CompletionKind.Enum => CompletionItemKind.Enum,
+            CompletionKind.Enum => CompletionItemKind.EnumMember,
             CompletionKind.MarkupExtension => CompletionItemKind.Interface,
             CompletionKind.Event => CompletionItemKind.Event,
             CompletionKind.AttachedEvent => CompletionItemKind.Event,

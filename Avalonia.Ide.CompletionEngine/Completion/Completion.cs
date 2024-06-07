@@ -6,7 +6,7 @@ namespace Avalonia.Ide.CompletionEngine;
 public enum CompletionKind
 {
     None = 0x0,
-    Comment = 0x1,
+    Snippet = 0x1,
     Class = 0x2,
     Property = 0x4,
     AttachedProperty = 0x8,

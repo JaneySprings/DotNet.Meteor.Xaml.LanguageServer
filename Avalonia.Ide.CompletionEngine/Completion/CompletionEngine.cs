@@ -237,17 +237,6 @@ public class CompletionEngine
             if (tagName is null)
             {
             }
-            else if (tagName.StartsWith("/"))
-            {
-                if (textToCursor.Length < 2)
-                    return null;
-                var closingState = XmlParser.Parse(textToCursor.Substring(0, textToCursor.Length - 2));
-
-                var name = closingState.GetParentTagName(0);
-                if (name == null)
-                    return null;
-                completions.Add(new Completion("/" + name + ">", CompletionKind.Class, priority: 0));
-            }
             else if (tagName.Contains('.'))
             {
                 var dotPos = tagName.IndexOf(".");
@@ -266,10 +255,6 @@ public class CompletionEngine
                 {
                     if (state.GetParentTagName(1) is string parentTag)
                     {
-                        if (!state.IsInClosingTag)
-                        {
-                            completions.Add(new Completion("/" + parentTag + ">", CompletionKind.Class, priority: 0));
-                        }
                         if (parentTag.IndexOf('.') == -1)
                         {
                             completions.Add(new Completion(parentTag, $"{parentTag}.", CompletionKind.Class, priority: 1)
@@ -278,7 +263,7 @@ public class CompletionEngine
                             });
                         }
                     }
-                    completions.Add(new Completion("!--", "!---->", CompletionKind.Comment) { RecommendedCursorOffset = 3 });
+                    completions.Add(new Completion("<!-- -->", "!---->", CompletionKind.Snippet) { RecommendedCursorOffset = 3 });
                 }
                 completions.AddRange(Helper.FilterTypes(tagName)
                     .Where(kvp => !kvp.Value.IsAbstract)
@@ -382,7 +367,7 @@ public class CompletionEngine
             }
             else if (type != null && type.Events.FirstOrDefault(x => x.Name == state.AttributeName) != null)
             {
-                completions.Add(new Completion("<New Event Handler>", $"{state.TagName}_{state.AttributeName}", CompletionKind.StaticProperty));
+                completions.Add(new Completion("<New Event Handler>", $"{state.TagName}_{state.AttributeName}", CompletionKind.Snippet));
             }
             else
             {
@@ -830,17 +815,14 @@ public class CompletionEngine
         return forPropertiesFromType(mdType, values[i], p => p);
     }
 
-    private List<Completion> GetHintCompletions(MetadataType? type, string? entered, string? currentAssemblyName = null, string? fullText = null, XmlParser? state = null)
+    private List<Completion> GetHintCompletions(MetadataType type, string? entered, string? currentAssemblyName = null, string? fullText = null, XmlParser? state = null)
     {
-        var completions = new List<Completion>();
-        if (type != null)
-        {
-            var kind = GetCompletionKindForHintValues(type);
-            completions.AddRange(FilterHintValues(type, entered, currentAssemblyName, state)
-                .Select(val => new Completion(val, kind)).ToList());
-        }
+        var kind = GetCompletionKindForHintValues(type);
 
-        if (type == null && state != null)
+        var completions = FilterHintValues(type, entered, currentAssemblyName, state)
+            .Select(val => new Completion(val, kind)).ToList();
+
+        if (type.FullName == "{BindingPath}" && state != null)
         {
             completions.AddRange(FilterHintValuesForBindingPath(entered, currentAssemblyName, fullText, state));
         }
@@ -969,8 +951,8 @@ public class CompletionEngine
             }
             else
             {
-                var defaultProp = t?.Properties.FirstOrDefault(/*t.ContentProperty == p.Name*/);
-                if (defaultProp != null)
+                var defaultProp = t?.Properties.FirstOrDefault(p => string.IsNullOrEmpty(p.Name));
+                if (defaultProp?.Type?.HasHintValues ?? false)
                 {
                     completions.AddRange(GetHintCompletions(defaultProp.Type, ext.AttributeName ?? "", currentAssemblyName, fullText, state));
                 }
@@ -991,7 +973,7 @@ public class CompletionEngine
                 prop = Helper.LookupProperty(transformedName, ext.AttributeName);
             }
 
-            if (prop?.Type == null || prop?.Type?.HasHintValues == true)
+            if (prop?.Type?.HasHintValues == true)
             {
                 var start = data.Substring(ext.CurrentValueStart);
                 completions.AddRange(GetHintCompletions(prop.Type, start, currentAssemblyName, fullText, state));

@@ -17,13 +17,13 @@ public static class MetadataConverter
 
     private static readonly string[] _avaloniaBaseType = new[]
     {
-        "Avalonia.Markup.Xaml.MarkupExtensions.BindingExtension,",
-        "Avalonia.Data.Binding,",
+        "Microsoft.Maui.Controls.Xaml.BindingExtension,",
+        "Microsoft.Maui.Controls.Binding,",
         "Avalonia.Controls.Control,",
-        "Avalonia.Data.TemplateBinding,",
+        "Microsoft.Maui.Controls.TemplateBinding,",
         "Portable.Xaml.Markup.TypeExtension,",
-        "Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension,",
-        "Avalonia.Markup.Xaml.MarkupExtensions.StaticResourceExtension,",
+        "Microsoft.Maui.Controls.Xaml.DynamicResourceExtension,",
+        "Microsoft.Maui.Controls.Xaml.StaticResourceExtension,",
         "Avalonia.Media.Brushes",
         "Avalonia.Styling.Selector,",
         "Avalonia.Media.Imaging.IBitmap",
@@ -166,7 +166,7 @@ public static class MetadataConverter
 
             foreach (var type in asmTypes)
             {
-                var mt = types[type.AssemblyQualifiedName] = ConvertTypeInfomation(type);
+                var mt = types[type.FullName] = ConvertTypeInfomation(type);
                 typeDefs[mt] = type;
                 metadata.AddType("clr-namespace:" + type.Namespace + ";assembly=" + asm.Name, mt);
                 string usingNamespace = $"using:{type.Namespace}";
@@ -662,69 +662,6 @@ public static class MetadataConverter
     private static void PostProcessTypes(Dictionary<string, MetadataType> types, Metadata metadata,
         IEnumerable<string> resourceUrls, List<AvaresInfo> avaResValues, HashSet<string> pseudoclasses)
     {
-        bool rhasext(string resource, string ext) => resource.StartsWith("resm:") ? resource.Contains(ext + "?assembly=") : resource.EndsWith(ext);
-
-        var allresourceUrls = avaResValues.Select(v => v.GlobalUrl).Concat(resourceUrls).ToArray();
-
-        var resType = new MetadataType("avares://,resm:")
-        {
-            IsStatic = true,
-            HasHintValues = true,
-            HintValues = allresourceUrls
-        };
-
-        types.Add(resType.Name, resType);
-
-        var xamlResType = new MetadataType("avares://*.xaml,resm:*.xaml")
-        {
-            HasHintValues = true,
-            HintValues = resType.HintValues.Where(r => rhasext(r, ".xaml") || rhasext(r, ".paml") || rhasext(r, ".axaml")).ToArray()
-        };
-
-        var styleResType = new MetadataType("Style avares://*.xaml,resm:*.xaml")
-        {
-            HasHintValues = true,
-            HintValues = avaResValues.Where(v => v.ReturnTypeFullName.StartsWith("Avalonia.Styling.Style"))
-                                    .Select(v => v.GlobalUrl)
-                                    .Concat(resourceUrls.Where(r => rhasext(r, ".xaml") || rhasext(r, ".paml") || rhasext(r, ".axaml")))
-                                    .ToArray()
-        };
-
-        types.Add(styleResType.Name, styleResType);
-
-        IEnumerable<string> filterLocalRes(MetadataType type, string? currentAssemblyName)
-        {
-            if (currentAssemblyName is not null)
-            {
-                var localResPrefix = $"avares://{currentAssemblyName}";
-                var resmSuffix = $"?assembly={currentAssemblyName}";
-
-                foreach (var hint in type.HintValues ?? Array.Empty<string>())
-                {
-                    if (hint.StartsWith("avares://"))
-                    {
-                        if (hint.StartsWith(localResPrefix))
-                        {
-                            yield return hint.Substring(localResPrefix.Length);
-                        }
-                    }
-                    else if (hint.StartsWith("resm:"))
-                    {
-                        if (hint.EndsWith(resmSuffix))
-                        {
-                            yield return hint.Substring(0, hint.Length - resmSuffix.Length);
-                        }
-                    }
-                }
-            }
-        }
-
-        resType.XamlContextHintValuesFunc = (a, t, p) => filterLocalRes(xamlResType, a);
-        xamlResType.XamlContextHintValuesFunc = (a, t, p) => filterLocalRes(xamlResType, a);
-        styleResType.XamlContextHintValuesFunc = (a, t, p) => filterLocalRes(styleResType, a);
-
-        types.Add(xamlResType.Name, xamlResType);
-
         var allProps = new Dictionary<string, MetadataProperty>();
 
         foreach (var type in types.Where(t => t.Value.IsAvaloniaObjectType))
@@ -756,15 +693,15 @@ public static class MetadataConverter
 
         string[] allAvaloniaProps = allProps.Keys.ToArray();
 
-        if (!avaloniaBaseType.TryGetValue("Avalonia.Markup.Xaml.MarkupExtensions.BindingExtension", out MetadataType? bindingExtType))
+        if (!avaloniaBaseType.TryGetValue("Microsoft.Maui.Controls.Xaml.BindingExtension", out MetadataType? bindingExtType))
         {
-            if (avaloniaBaseType.TryGetValue("Avalonia.Data.Binding", out MetadataType? origBindingType))
+            if (avaloniaBaseType.TryGetValue("Microsoft.Maui.Controls.Binding", out MetadataType? origBindingType))
             {
                 //avalonia 0.10 has implicit binding extension
                 bindingExtType = origBindingType with
                 {
                     Name = "BindingExtension",
-                    FullName = "Avalonia.Markup.Xaml.MarkupExtensions.BindingExtension"
+                    FullName = "Microsoft.Maui.Controls.Xaml.BindingExtension"
                 };
                 bindingExtType.IsMarkupExtension = true;
 
@@ -780,16 +717,17 @@ public static class MetadataConverter
         {
             FullName = "{BindingPath}",
             HasHintValues = true,
-            HintValues = new[] { "$parent", "$parent[", "$self" },
         };
 
         //bindings related hints
-        if (types.TryGetValue("Avalonia.Markup.Xaml.MarkupExtensions.BindingExtension", out MetadataType? bindingType))
+        if (types.TryGetValue("Microsoft.Maui.Controls.Xaml.BindingExtension", out MetadataType? bindingType))
         {
             bindingType.SupportCtorArgument = MetadataTypeCtorArgument.None;
             for (var i = 0; i < bindingType.Properties.Count; i++)
             {
-                if (bindingType.Properties[i].Name == "Path")
+                if (bindingType.Properties[i].Name == "Path" 
+                    || bindingType.Properties[i].Name == "FallbackValue"
+                    || bindingType.Properties[i].Name == "TargetNullValue")
                 {
                     bindingType.Properties[i] = bindingType.Properties[i] with
                     {
@@ -801,7 +739,7 @@ public static class MetadataConverter
             bindingType.Properties.Add(new MetadataProperty("", dataContextType, bindingType, false, false, true, true));
         }
 
-        if (avaloniaBaseType.TryGetValue("Avalonia.Data.TemplateBinding", out MetadataType? templBinding))
+        if (avaloniaBaseType.TryGetValue("Microsoft.Maui.Controls.TemplateBinding", out MetadataType? templBinding))
         {
             var tbext = new MetadataType("TemplateBindingExtension")
             {
@@ -821,124 +759,50 @@ public static class MetadataConverter
             typeExtension.SupportCtorArgument = MetadataTypeCtorArgument.Type;
         }
 
-        //TODO: may be make it to load from assembly resources
-        string[] commonResKeys = new string[] {
-//common brushes
-"ThemeBackgroundBrush","ThemeBorderLowBrush","ThemeBorderMidBrush","ThemeBorderHighBrush",
-"ThemeControlLowBrush","ThemeControlMidBrush","ThemeControlHighBrush",
-"ThemeControlHighlightLowBrush","ThemeControlHighlightMidBrush","ThemeControlHighlightHighBrush",
-"ThemeForegroundBrush","ThemeForegroundLowBrush","HighlightBrush",
-"ThemeAccentBrush","ThemeAccentBrush2","ThemeAccentBrush3","ThemeAccentBrush4",
-"ErrorBrush","ErrorLowBrush",
-//some other usefull
-"ThemeBorderThickness", "ThemeDisabledOpacity",
-"FontSizeSmall","FontSizeNormal","FontSizeLarge"
-            };
+// TODO: MAUI
+//         //TODO: may be make it to load from assembly resources
+//         string[] commonResKeys = new string[] {
+// //common brushes
+// "ThemeBackgroundBrush","ThemeBorderLowBrush","ThemeBorderMidBrush","ThemeBorderHighBrush",
+// "ThemeControlLowBrush","ThemeControlMidBrush","ThemeControlHighBrush",
+// "ThemeControlHighlightLowBrush","ThemeControlHighlightMidBrush","ThemeControlHighlightHighBrush",
+// "ThemeForegroundBrush","ThemeForegroundLowBrush","HighlightBrush",
+// "ThemeAccentBrush","ThemeAccentBrush2","ThemeAccentBrush3","ThemeAccentBrush4",
+// "ErrorBrush","ErrorLowBrush",
+// //some other usefull
+// "ThemeBorderThickness", "ThemeDisabledOpacity",
+// "FontSizeSmall","FontSizeNormal","FontSizeLarge"
+//             };
 
-        if (avaloniaBaseType.TryGetValue("Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension", out MetadataType? dynRes))
+//         if (avaloniaBaseType.TryGetValue("Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension", out MetadataType? dynRes))
+//         {
+//             dynRes.SupportCtorArgument = MetadataTypeCtorArgument.HintValues;
+//             dynRes.HasHintValues = true;
+//             dynRes.HintValues = commonResKeys;
+//         }
+
+//         if (avaloniaBaseType.TryGetValue("Avalonia.Markup.Xaml.MarkupExtensions.StaticResourceExtension", out MetadataType? stRes))
+//         {
+//             stRes.SupportCtorArgument = MetadataTypeCtorArgument.HintValues;
+//             stRes.HasHintValues = true;
+//             stRes.HintValues = commonResKeys;
+//         }
+
+        //colors
+        if (types.TryGetValue("Microsoft.Maui.Graphics.Color", out MetadataType? colorType) &&
+            types.TryGetValue("Microsoft.Maui.Graphics.Colors", out MetadataType? colors))
         {
-            dynRes.SupportCtorArgument = MetadataTypeCtorArgument.HintValues;
-            dynRes.HasHintValues = true;
-            dynRes.HintValues = commonResKeys;
+            colorType.HasHintValues = true;
+            colorType.HintValues = colors.Properties.Where(p => p.IsStatic && p.HasGetter).Select(p => p.Name).ToArray();
         }
 
-        if (avaloniaBaseType.TryGetValue("Avalonia.Markup.Xaml.MarkupExtensions.StaticResourceExtension", out MetadataType? stRes))
-        {
-            stRes.SupportCtorArgument = MetadataTypeCtorArgument.HintValues;
-            stRes.HasHintValues = true;
-            stRes.HintValues = commonResKeys;
-        }
-
-        //brushes
-        if (types.TryGetValue("Avalonia.Media.IBrush", out MetadataType? brushType) &&
-            avaloniaBaseType.TryGetValue("Avalonia.Media.Brushes", out MetadataType? brushes))
-        {
-            brushType.HasHintValues = true;
-            brushType.HintValues = brushes.Properties.Where(p => p.IsStatic && p.HasGetter).Select(p => p.Name).ToArray();
-        }
-
-        //TODO: Remove
-        if (avaloniaBaseType.TryGetValue("Avalonia.Styling.Selector", out MetadataType? styleSelector))
-        {
-            styleSelector.HasHintValues = true;
-            styleSelector.IsCompositeValue = true;
-
-            List<string> hints = new List<string>();
-
-            //some reserved words
-            hints.AddRange(new[] { "/template/", ":is()", ">", "#", ".", "^", ":not()" });
-
-            //some pseudo classes
-            hints.AddRange(pseudoclasses);
-
-            hints.AddRange(types.Where(t => t.Value.IsAvaloniaObjectType).Select(t => t.Value.Name.Replace(":", "|")));
-
-            styleSelector.HintValues = hints.ToArray();
-        }
-
-        string[] bitmaptypes = new[] { ".jpg", ".bmp", ".png", ".ico" };
-
-        bool isbitmaptype(string resource) => bitmaptypes.Any(ext => rhasext(resource, ext));
-
-        if (avaloniaBaseType.TryGetValue("Avalonia.Media.Imaging.IBitmap", out MetadataType? ibitmapType))
-        {
-            ibitmapType.HasHintValues = true;
-            ibitmapType.HintValues = allresourceUrls.Where(r => isbitmaptype(r)).ToArray();
-            ibitmapType.XamlContextHintValuesFunc = (a, t, p) => filterLocalRes(ibitmapType, a);
-        }
-
-        if (avaloniaBaseType.TryGetValue("Avalonia.Media.IImage", out MetadataType? iImageType))
-        {
-            iImageType.HasHintValues = true;
-            iImageType.HintValues = allresourceUrls.Where(r => isbitmaptype(r)).ToArray();
-            iImageType.XamlContextHintValuesFunc = (a, t, p) => filterLocalRes(iImageType, a);
-        }
-
-        if (avaloniaBaseType.TryGetValue("Avalonia.Controls.WindowIcon", out MetadataType? winIcon))
-        {
-            winIcon.HasHintValues = true;
-            winIcon.HintValues = allresourceUrls.Where(r => rhasext(r, ".ico")).ToArray();
-            winIcon.XamlContextHintValuesFunc = (a, t, p) => filterLocalRes(winIcon, a);
-        }
-
-        if (avaloniaBaseType.TryGetValue("Avalonia.Markup.Xaml.Styling.StyleInclude", out MetadataType? styleIncludeType))
-        {
-            var source = styleIncludeType.Properties.FirstOrDefault(p => p.Name == "Source");
-
-            for (var i = 0; i < styleIncludeType.Properties.Count; i++)
-            {
-                if (styleIncludeType.Properties[i].Name == "Source")
-                {
-                    styleIncludeType.Properties[i] = styleIncludeType.Properties[i] with
-                    {
-                        Type = styleResType
-                    };
-                }
-            }
-        }
-
-        if (types.TryGetValue("Avalonia.Markup.Xaml.Styling.StyleIncludeExtension", out MetadataType? styleIncludeExtType))
-        {
-            var source = styleIncludeExtType.Properties.FirstOrDefault(p => p.Name == "Source");
-
-            for (var i = 0; i < styleIncludeExtType.Properties.Count; i++)
-            {
-                if (styleIncludeExtType.Properties[i].Name == "Source")
-                {
-                    styleIncludeExtType.Properties[i] = styleIncludeExtType.Properties[i] with
-                    {
-                        Type = xamlResType
-                    };
-                }
-            }
-        }
-
-        if (types.TryGetValue(typeof(Uri).FullName!, out MetadataType? uriType))
-        {
-            uriType.HasHintValues = true;
-            uriType.HintValues = allresourceUrls.ToArray();
-            uriType.XamlContextHintValuesFunc = (a, t, p) => filterLocalRes(uriType, a);
-        }
+        // //brushes
+        // if (types.TryGetValue("Avalonia.Media.IBrush", out MetadataType? brushType) &&
+        //     avaloniaBaseType.TryGetValue("Avalonia.Media.Brushes", out MetadataType? brushes))
+        // {
+        //     brushType.HasHintValues = true;
+        //     brushType.HintValues = brushes.Properties.Where(p => p.IsStatic && p.HasGetter).Select(p => p.Name).ToArray();
+        // }
 
         if (typeType != null)
         {
