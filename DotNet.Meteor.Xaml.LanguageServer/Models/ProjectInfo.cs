@@ -63,5 +63,5 @@ public class ProjectInfo {
             return !string.IsNullOrEmpty(assemblyPath) && File.Exists(assemblyPath);
         }
     }
-
+    public string AssemblyName => Path.GetFileNameWithoutExtension(ProjectPath);
 }

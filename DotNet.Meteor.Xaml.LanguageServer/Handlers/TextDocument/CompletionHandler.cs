@@ -34,7 +34,7 @@ public class CompletionHandler : CompletionHandlerBase {
         if (metadata == null)
             return new CompletionList();
 
-        var set = completionEngine?.GetCompletions(metadata!, text, text.Length);
+        var set = completionEngine?.GetCompletions(metadata!, text, text.Length, workspaceService.ProjectInfo?.AssemblyName);
         var completions = set?.Completions
             .Where(p => !p.DisplayText.Contains('`'))
             .Select(p => new CompletionItem {

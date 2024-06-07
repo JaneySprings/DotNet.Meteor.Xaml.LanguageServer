@@ -46,8 +46,8 @@ internal static class Utils
         }
     }
 
-    public const string AvaloniaNamespace = "https://github.com/avaloniaui";
-    public const string Xaml2006Namespace = "http://schemas.microsoft.com/winfx/2006/xaml";
+    public const string AvaloniaNamespace = "http://schemas.microsoft.com/dotnet/2021/maui"; //"https://github.com/avaloniaui";
+    public const string Xaml2006Namespace = "http://schemas.microsoft.com/winfx/2009/xaml";  //"http://schemas.microsoft.com/winfx/2006/xaml";
 
     public static TValue GetOrCreate<TKey, TValue>(this Dictionary<TKey, TValue> dic, TKey key,
         Func<TKey, TValue> getter) where TKey : notnull

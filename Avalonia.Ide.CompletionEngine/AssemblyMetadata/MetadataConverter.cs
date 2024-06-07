@@ -239,6 +239,9 @@ public static class MetadataConverter
 
                 foreach (var eventDef in typeDef.Events)
                 {
+                    if (!eventDef.IsPublic)
+                        continue;
+
                     var e = new MetadataEvent(eventDef.Name, GetType(types, eventDef.TypeFullName, eventDef.QualifiedTypeFullName),
                         types.GetValueOrDefault(typeDef.FullName, typeDef.AssemblyQualifiedName), false);
 
