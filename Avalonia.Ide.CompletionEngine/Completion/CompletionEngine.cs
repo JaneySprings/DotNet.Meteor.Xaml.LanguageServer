@@ -818,7 +818,7 @@ public class CompletionEngine
 
         while (mdType != null && i < values.Length - 1 && !string.IsNullOrEmpty(values[i]))
         {
-            if (i <= 1 && values[i] == "DataContext")
+            if (i <= 1 && values[i] == "BindingContext")
             {
                 //assume parent.datacontext is x:datatype so we have some intelisence
                 type = state.FindParentAttributeValue("(x\\:)?DataType");
@@ -832,7 +832,7 @@ public class CompletionEngine
             i++;
         }
 
-        return forPropertiesFromType(mdType, values[i], p => $"{string.Join(".", values.Take(i).ToArray())}.{p}");
+        return forPropertiesFromType(mdType, values[i], p => p);
     }
 
     private List<Completion> GetHintCompletions(MetadataType? type, string? entered, string? currentAssemblyName = null, string? fullText = null, XmlParser? state = null)
@@ -974,7 +974,7 @@ public class CompletionEngine
             }
             else
             {
-                var defaultProp = t?.Properties.FirstOrDefault(p => p.Type == null);
+                var defaultProp = t?.Properties.FirstOrDefault(/*t.ContentProperty == p.Name*/);
                 if (defaultProp != null)
                 {
                     completions.AddRange(GetHintCompletions(defaultProp.Type, ext.AttributeName ?? "", currentAssemblyName, fullText, state));

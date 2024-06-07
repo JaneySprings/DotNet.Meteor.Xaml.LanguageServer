@@ -20,7 +20,7 @@ public class CompletionHandler : CompletionHandlerBase {
     protected override CompletionRegistrationOptions CreateRegistrationOptions(CompletionCapability capability, ClientCapabilities clientCapabilities) {
         return new CompletionRegistrationOptions {
             DocumentSelector = LanguageServer.SelectorFoXamlDocuments,
-            TriggerCharacters = new[] { "\'", "\"", " ", "<", ".", "[", "(", "#", "|", "/", "{" },
+            TriggerCharacters = new[] { "\'", "\"", " ", "<", ".", "[", "(", "#", "|", "/", "{", ":" },
             AllCommitCharacters = new[] { "\n" },
             ResolveProvider = false,
         };
