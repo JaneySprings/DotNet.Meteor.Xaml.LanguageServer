@@ -15,24 +15,6 @@ public static class MetadataConverter
     private const int LegacyXmlResourceIndex = 1;
     private const int CurrentResourceIndex = 2;
 
-    private static readonly string[] _avaloniaBaseType = new[]
-    {
-        "Microsoft.Maui.Controls.Xaml.BindingExtension,",
-        "Microsoft.Maui.Controls.Binding,",
-        "Avalonia.Controls.Control,",
-        "Microsoft.Maui.Controls.TemplateBinding,",
-        "Portable.Xaml.Markup.TypeExtension,",
-        "Microsoft.Maui.Controls.Xaml.DynamicResourceExtension,",
-        "Microsoft.Maui.Controls.Xaml.StaticResourceExtension,",
-        "Avalonia.Media.Brushes",
-        "Avalonia.Styling.Selector,",
-        "Avalonia.Media.Imaging.IBitmap",
-        "Avalonia.Media.IImage",
-        "Avalonia.Controls.WindowIcon,",
-        "Avalonia.Markup.Xaml.Styling.StyleIncludeExtension,",
-        "Avalonia.Markup.Xaml.Styling.StyleInclude,",
-        "Avalonia.Markup.Xaml.Styling.StyleIncludeExtension,",
-    };
     private readonly static Regex extractType = new Regex(
       "System.Nullable`1<(?<Type>.*)>|System.Nullable`1\\[\\[(?<Typ" +
       "e>.*)]].*",
@@ -672,45 +654,6 @@ public static class MetadataConverter
             }
         }
 
-        // Remmap avalonia base type
-        Dictionary<string, MetadataType> avaloniaBaseType = new Dictionary<string, MetadataType>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var kv in types)
-        {
-            if (_avaloniaBaseType.FirstOrDefault((a, b) => b.StartsWith(a, StringComparison.OrdinalIgnoreCase), kv.Key) is string at)
-            {
-                var len = at.Length - 1;
-                if (at[len] == ',')
-                {
-                    avaloniaBaseType.Add(at.Substring(0, at.Length - 1), kv.Value);
-                }
-                else
-                {
-                    avaloniaBaseType.Add(at, kv.Value);
-                }
-            }
-        }
-
-        string[] allAvaloniaProps = allProps.Keys.ToArray();
-
-        if (!avaloniaBaseType.TryGetValue("Microsoft.Maui.Controls.Xaml.BindingExtension", out MetadataType? bindingExtType))
-        {
-            if (avaloniaBaseType.TryGetValue("Microsoft.Maui.Controls.Binding", out MetadataType? origBindingType))
-            {
-                //avalonia 0.10 has implicit binding extension
-                bindingExtType = origBindingType with
-                {
-                    Name = "BindingExtension",
-                    FullName = "Microsoft.Maui.Controls.Xaml.BindingExtension"
-                };
-                bindingExtType.IsMarkupExtension = true;
-
-                types.Add(bindingExtType.FullName, bindingExtType);
-                metadata.AddType(Utils.AvaloniaNamespace, bindingExtType);
-            }
-        }
-
-        avaloniaBaseType.TryGetValue("Avalonia.Controls.Control", out MetadataType? controlType);
         types.TryGetValue(typeof(Type).FullName!, out MetadataType? typeType);
 
         var dataContextType = new MetadataType("{BindingPath}")
@@ -739,27 +682,7 @@ public static class MetadataConverter
             bindingType.Properties.Add(new MetadataProperty("", dataContextType, bindingType, false, false, true, true));
         }
 
-        if (avaloniaBaseType.TryGetValue("Microsoft.Maui.Controls.TemplateBinding", out MetadataType? templBinding))
-        {
-            var tbext = new MetadataType("TemplateBindingExtension")
-            {
-                IsMarkupExtension = true,
-                Properties = templBinding.Properties,
-                SupportCtorArgument = MetadataTypeCtorArgument.HintValues,
-                HasHintValues = allAvaloniaProps?.Any() ?? false,
-                HintValues = allAvaloniaProps
-            };
-
-            types["TemplateBindingExtension"] = tbext;
-            metadata.AddType(Utils.AvaloniaNamespace, tbext);
-        }
-
-        if (avaloniaBaseType.TryGetValue("Portable.Xaml.Markup.TypeExtension", out MetadataType? typeExtension))
-        {
-            typeExtension.SupportCtorArgument = MetadataTypeCtorArgument.Type;
-        }
-
-// TODO: MAUI
+// TODO: MAUI (?)
 //         //TODO: may be make it to load from assembly resources
 //         string[] commonResKeys = new string[] {
 // //common brushes

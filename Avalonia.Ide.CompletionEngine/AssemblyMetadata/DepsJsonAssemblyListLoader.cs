@@ -45,6 +45,22 @@ public static class DepsJsonAssemblyListLoader
         }
     }
 
+    private static bool IsAssemblyBlacklisted(string dllName) {
+        return dllName.StartsWith("System.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Microsoft.CSharp.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Microsoft.VisualBasic.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Microsoft.Win32.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Microsoft.Extensions.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("WindowsBase.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("mscorlib.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("netstandard.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("GoogleGson.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Xamarin.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Jsr305Binding.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Microsoft.MacCatalyst.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Microsoft.iOS.", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static IEnumerable<string> ParseFile(string path)
     {
         var dir = Path.GetDirectoryName(path);
@@ -63,6 +79,11 @@ public static class DepsJsonAssemblyListLoader
 
         foreach (var l in TransformDeps(deps.RootElement.GetProperty("targets").GetProperty(target)))
         {
+            if (IsAssemblyBlacklisted(l.DllName))
+            {
+                continue;
+            }
+
             var localPath = Path.Combine(dir, l.DllName);
             if (File.Exists(localPath))
             {

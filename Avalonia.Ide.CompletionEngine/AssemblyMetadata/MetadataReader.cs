@@ -25,7 +25,7 @@ public class MetadataReader
             Path.GetFileNameWithoutExtension(path) + ".deps.json");
         if (File.Exists(depsPath))
             return DepsJsonAssemblyListLoader.ParseFile(depsPath);
-        return Directory.GetFiles(directory).Where(f => f.EndsWith(".dll") || f.EndsWith(".exe"));
+        return Directory.GetFiles(directory).Where(f => !f.StartsWith("System.") && f.EndsWith(".dll"));
     }
 
     public Metadata? GetForTargetAssembly(string path)
