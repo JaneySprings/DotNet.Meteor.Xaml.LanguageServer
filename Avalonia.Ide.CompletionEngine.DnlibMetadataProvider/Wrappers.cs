@@ -62,6 +62,7 @@ internal class TypeWrapper : ITypeInformation
     public string AssemblyQualifiedName { get; }
     public string Namespace => _type.Namespace;
     public ITypeInformation? GetBaseType() => FromDef(_type.GetBaseType().ResolveTypeDef());
+    public IEnumerable<ITypeInformation?> GetInterfaces() => _type.Interfaces.Select(i => FromDef(i.Interface.ResolveTypeDef()));
 
     public IEnumerable<IEventInformation> Events => _type.Events.Select(e => new EventWrapper(e));
 

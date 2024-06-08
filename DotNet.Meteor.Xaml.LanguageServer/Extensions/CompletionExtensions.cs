@@ -11,16 +11,17 @@ public static class CompletionExtensions {
             CompletionKind.Property => CompletionItemKind.Property,
             CompletionKind.AttachedProperty => CompletionItemKind.Property,
             CompletionKind.StaticProperty => CompletionItemKind.EnumMember,
-            CompletionKind.Namespace => CompletionItemKind.Module,
             CompletionKind.Enum => CompletionItemKind.EnumMember,
             CompletionKind.MarkupExtension => CompletionItemKind.Class,
             CompletionKind.Event => CompletionItemKind.Event,
             CompletionKind.AttachedEvent => CompletionItemKind.Event,
             CompletionKind.DataProperty => CompletionItemKind.Property,
             CompletionKind.TargetTypeClass => CompletionItemKind.Class,
+            CompletionKind.Namespace => CompletionItemKind.Module,
             CompletionKind.VS_XMLNS => CompletionItemKind.Module,
-            CompletionKind.Selector => CompletionItemKind.Module,
             CompletionKind.Name => CompletionItemKind.Text,
+
+            CompletionKind.Namespace | CompletionKind.VS_XMLNS => CompletionItemKind.Module,
             _ => CompletionItemKind.Text
         };
     }

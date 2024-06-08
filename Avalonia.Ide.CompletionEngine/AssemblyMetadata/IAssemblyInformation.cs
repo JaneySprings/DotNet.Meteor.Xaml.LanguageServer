@@ -35,6 +35,8 @@ public interface ITypeInformation
     string AssemblyQualifiedName { get; }
 
     ITypeInformation? GetBaseType();
+    IEnumerable<ITypeInformation?> GetInterfaces();
+
     IEnumerable<IMethodInformation> Methods { get; }
     IEnumerable<IPropertyInformation> Properties { get; }
     IEnumerable<IEventInformation> Events { get; }

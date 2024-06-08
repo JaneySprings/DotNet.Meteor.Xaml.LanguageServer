@@ -38,6 +38,7 @@ public record MetadataType(string Name)
     public string FullName { get; set; } = "";
     public List<MetadataProperty> Properties { get; set; } = new List<MetadataProperty>();
     public List<MetadataEvent> Events { get; set; } = new List<MetadataEvent>();
+    public List<MetadataField> Fields { get; set; } = new List<MetadataField>();
     public bool HasAttachedProperties { get; set; }
     public bool HasAttachedEvents { get; set; }
     public bool HasStaticGetProperties { get; set; }
@@ -67,4 +68,7 @@ public enum MetadataTypeCtorArgument
 [DebuggerDisplay("{Name} from {DeclaringType}")]
 public record MetadataProperty(string Name, MetadataType? Type, MetadataType? DeclaringType, bool IsAttached, bool IsStatic, bool HasGetter, bool HasSetter);
 
+public record MetadataField(string Name, MetadataType? Type, MetadataType? DeclaringType, bool IsAttached, bool IsStatic);
+
 public record MetadataEvent(string Name, MetadataType? Type, MetadataType? DeclaringType, bool IsAttached);
+

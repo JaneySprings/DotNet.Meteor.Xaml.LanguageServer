@@ -28,7 +28,7 @@ public static class MetadataConverter
 
         while (def != null)
         {
-            if (def.Name == "MarkupExtension")
+            if (def.GetInterfaces().Any(i => i?.Name == "IMarkupExtension"))
                 return true;
             def = def.GetBaseType();
         }
@@ -228,6 +228,17 @@ public static class MetadataConverter
                         types.GetValueOrDefault(typeDef.FullName, typeDef.AssemblyQualifiedName), false);
 
                     type.Events.Add(e);
+                }
+
+                foreach (var fieldDef in typeDef.Fields)
+                {
+                    if (!fieldDef.IsPublic)
+                        continue;
+
+                    var f = new MetadataField(fieldDef.Name, GetType(types, fieldDef.QualifiedTypeFullName),
+                        types.GetValueOrDefault(typeDef.FullName, typeDef.AssemblyQualifiedName), false, fieldDef.IsStatic);
+
+                    type.Fields.Add(f);
                 }
 
                 if (level == 0)
@@ -716,16 +727,22 @@ public static class MetadataConverter
             types.TryGetValue("Microsoft.Maui.Graphics.Colors", out MetadataType? colors))
         {
             colorType.HasHintValues = true;
-            colorType.HintValues = colors.Properties.Where(p => p.IsStatic && p.HasGetter).Select(p => p.Name).ToArray();
+            colorType.HintValues = colors.Fields.Where(f => f.IsStatic).Select(f => f.Name).ToArray();
         }
 
-        // //brushes
-        // if (types.TryGetValue("Avalonia.Media.IBrush", out MetadataType? brushType) &&
-        //     avaloniaBaseType.TryGetValue("Avalonia.Media.Brushes", out MetadataType? brushes))
-        // {
-        //     brushType.HasHintValues = true;
-        //     brushType.HintValues = brushes.Properties.Where(p => p.IsStatic && p.HasGetter).Select(p => p.Name).ToArray();
-        // }
+        //easing
+        if (types.TryGetValue("Microsoft.Maui.Easing", out MetadataType? easingType))
+        {
+            easingType.HasHintValues = true;
+            easingType.HintValues = easingType.Fields.Where(f => f.IsStatic).Select(f => f.Name).ToArray();
+        }
+
+        //layout
+        if (types.TryGetValue("Microsoft.Maui.Controls.LayoutOptions", out MetadataType? optionsType))
+        {
+            optionsType.HasHintValues = true;
+            optionsType.HintValues = optionsType.Fields.Where(f => f.IsStatic).Select(f => f.Name).ToArray();
+        }
 
         if (typeType != null)
         {

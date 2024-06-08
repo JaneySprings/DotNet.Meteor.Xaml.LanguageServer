@@ -1,3 +1,4 @@
+using DotNet.Meteor.Xaml.LanguageServer.Extensions;
 using DotNet.Meteor.Xaml.LanguageServer.Services;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
@@ -31,16 +32,18 @@ public class DocumentFormattingHandler : DocumentFormattingHandlerBase {
         if (documentContent == null)
             return Task.FromResult<TextEditContainer?>(null);
 
-        var formattedDocument = stylerService.StyleDocument(documentContent);
-        if (formattedDocument == null)
-            return Task.FromResult<TextEditContainer?>(null);
+        return ServerExtensions.Invoke(Task.FromResult<TextEditContainer?>(null), () => {
+            var formattedDocument = stylerService.StyleDocument(documentContent);
+            if (formattedDocument == null)
+                return Task.FromResult<TextEditContainer?>(null);
 
-        return Task.FromResult<TextEditContainer?>(new TextEditContainer(new TextEdit() {
-            NewText = formattedDocument,
-            Range = new Range() {
-                Start = new Position(0, 0),
-                End = new Position(int.MaxValue, int.MaxValue),
-            }
-        }));
+            return Task.FromResult<TextEditContainer?>(new TextEditContainer(new TextEdit() {
+                NewText = formattedDocument,
+                Range = new Range() {
+                    Start = new Position(0, 0),
+                    End = new Position(int.MaxValue, int.MaxValue),
+                }
+            }));
+        });
     }
 }
