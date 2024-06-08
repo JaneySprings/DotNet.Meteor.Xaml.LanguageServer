@@ -20,6 +20,9 @@ public class BufferService {
     public string? GetTextTillPosition(DocumentUri key, Position position) {
         return _buffers[key].GetTextTillLine(position);
     }
+    public string? GetText(DocumentUri key) {
+        return _buffers[key].GetText();
+    }
 
     public void ApplyFullChange(DocumentUri key, string text) {
         var buffer = _buffers[key];

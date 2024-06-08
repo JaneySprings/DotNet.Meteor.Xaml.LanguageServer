@@ -30,7 +30,7 @@ public class LanguageServer {
             // .WithHandler<HoverHandler>()
             // .WithHandler<FoldingRangeHandler>()
             // .WithHandler<SignatureHelpHandler>()
-            // .WithHandler<FormattingHandler>()
+            .WithHandler<DocumentFormattingHandler>()
             // .WithHandler<RangeFormattingHandler>()
             // .WithHandler<RenameHandler>()
             .WithHandler<CompletionHandler>()

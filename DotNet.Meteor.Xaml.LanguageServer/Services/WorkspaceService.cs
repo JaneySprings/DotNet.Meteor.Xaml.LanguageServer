@@ -8,6 +8,8 @@ using OmniSharp.Extensions.LanguageServer.Protocol;
 namespace DotNet.Meteor.Xaml.LanguageServer.Services;
 
 public class WorkspaceService {
+    private const string XamlFormatterConfigFileName = ".xamlstylerconfig";
+
     public ProjectInfo? ProjectInfo { get; private set; }
     public BufferService BufferService { get; } = new();
 
@@ -19,6 +21,22 @@ public class WorkspaceService {
             CurrentSessionLogger.Error(e);
             CurrentSessionLogger.Error($"Failed to initialize workspace: {uri}");
         }
+    }
+    public string FindXamlFormatterConfigFile() {
+        if (ProjectInfo == null)
+            return string.Empty;
+
+        var configFilePath = string.Empty;
+        var directory = new DirectoryInfo(ProjectInfo.ProjectDirectory);
+        while (directory.Parent != null) {
+            configFilePath = Path.Combine(directory.FullName, XamlFormatterConfigFileName);
+            if (File.Exists(configFilePath))
+                return configFilePath;
+
+            directory = directory.Parent;
+        }
+
+        return string.Empty;
     }
 
     private Metadata? BuildCompletionMetadata(DocumentUri uri) {
