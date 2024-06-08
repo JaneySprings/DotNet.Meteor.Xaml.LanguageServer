@@ -45,7 +45,7 @@ public static class DepsJsonAssemblyListLoader
         }
     }
 
-    private static bool IsAssemblyBlacklisted(string dllName) {
+    public static bool IsAssemblyBlacklisted(string dllName) {
         return dllName.StartsWith("System.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.CSharp.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.VisualBasic.", StringComparison.OrdinalIgnoreCase)
@@ -58,7 +58,8 @@ public static class DepsJsonAssemblyListLoader
             || dllName.StartsWith("Xamarin.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Jsr305Binding.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.MacCatalyst.", StringComparison.OrdinalIgnoreCase)
-            || dllName.StartsWith("Microsoft.iOS.", StringComparison.OrdinalIgnoreCase);
+            || dllName.StartsWith("Microsoft.iOS.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Mono.Android", StringComparison.OrdinalIgnoreCase);
     }
 
     public static IEnumerable<string> ParseFile(string path)

@@ -81,7 +81,7 @@ public class CompletionEngine
             prefix ??= "";
 
             var e = _types
-                .Where(t => t.Value.IsXamlDirective == xamlDirectiveOnly && t.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                .Where(t => t.Value.IsXamlDirective == xamlDirectiveOnly && t.Key.Contains(prefix, StringComparison.OrdinalIgnoreCase))
                 .Where(x => !x.Key.Equals("ControlTemplateResult") && !x.Key.Equals("DataTemplateExtensions"));
             if (withAttachedPropertiesOrEventsOnly)
                 e = e.Where(t => t.Value.HasAttachedProperties || t.Value.HasAttachedEvents);
@@ -263,17 +263,19 @@ public class CompletionEngine
                             });
                         }
                     }
-                    completions.Add(new Completion("<!-- -->", "!---->", CompletionKind.Snippet) { RecommendedCursorOffset = 3 });
+                    completions.Add(new Completion("<!-- -->", "!--$0-->", CompletionKind.Snippet) { RecommendedCursorOffset = 3 });
                 }
                 completions.AddRange(Helper.FilterTypes(tagName)
                     .Where(kvp => !kvp.Value.IsAbstract)
                     .Select(kvp =>
                         {
                             var ci = GetElementCompletationInfo(kvp.Key, kvp.Value);
-                            return new Completion(ci.DisplayText, ci.InsertText, CompletionKind.Class)
+                            var insertText = GetInsertTextForValue(ci.InsertText, tagName);
+                            return new Completion(insertText, insertText, CompletionKind.Class)
                             {
                                 RecommendedCursorOffset = ci.RecommendedCursorOffset,
                                 TriggerCompletionAfterInsert = ci.TriggerCompletionAfterInsert,
+                                Description = kvp.Value.FullName
                             };
                         }));
             }
@@ -284,7 +286,7 @@ public class CompletionEngine
             if (state.State == XmlParser.ParserState.InsideElement)
                 curStart = pos; //Force completion to be started from current cursor position
 
-            var attributeSuffix = "=\"\"";
+            var attributeSuffix = "=\"$0\"";
             var attributeOffset = 2;
             if (fullText.Length > pos && fullText[pos] == '=')
             {
@@ -329,7 +331,10 @@ public class CompletionEngine
                     completions.AddRange(
                         Helper.FilterTypes(attributeName, xamlDirectiveOnly: true)
                             .Where(t => t.Value.IsValidForXamlContextFunc?.Invoke(currentAssemblyName, targetType, null) ?? true)
-                            .Select(v => new Completion(v.Key, v.Key + attributeSuffix, v.Key, CompletionKind.Class, v.Key.Length + attributeOffset)));
+                            .Select(v => {
+                                var insertText = GetInsertTextForValue(v.Key, attributeName);
+                                return new Completion(insertText, insertText + attributeSuffix, v.Key, CompletionKind.Namespace, v.Key.Length + attributeOffset);
+                            }));
 
                     if (targetType.IsAvaloniaObjectType)
                     {
@@ -409,8 +414,10 @@ public class CompletionEngine
                         cKind |= CompletionKind.TargetTypeClass;
                     }
 
-                    completions.AddRange(Helper.FilterTypeNames(state?.AttributeValue)
-                        .Select(x => new Completion(x, x, x, cKind)));
+                    completions.AddRange(Helper.FilterTypeNames(state?.AttributeValue).Select(x => {
+                        var insertText = GetInsertTextForValue(x, state?.AttributeValue);
+                        return new Completion(insertText, insertText, x, cKind);
+                    }));
                 }
                 else if ((state.AttributeName == "xmlns" || state.AttributeName?.Contains("xmlns:") == true)
                     && state.AttributeValue is not null)
@@ -429,7 +436,10 @@ public class CompletionEngine
                     if (state.AttributeValue.StartsWith("clr-namespace:"))
                         completions.AddRange(
                                 filterNamespaces(v => v.StartsWith(state.AttributeValue))
-                                .Select(v => new Completion(v.Substring("clr-namespace:".Length), v, v, cKind)));
+                                .Select(v => {
+                                    var insertText = GetInsertTextForValue(v, state.AttributeValue);
+                                    return new Completion(insertText, insertText, v, cKind);
+                                }));
                     else
                     {
                         if ("using:".StartsWith(state.AttributeValue))
@@ -452,7 +462,7 @@ public class CompletionEngine
                     {
                         var asmKey = $";assembly={currentAssemblyName}";
                         var fullClassNames = Helper.Metadata.Namespaces.Where(v => v.Key.EndsWith(asmKey))
-                                                                        .SelectMany(v => v.Value.Values.Where(t => t.IsAvaloniaObjectType))
+                                                                        .SelectMany(v => v.Value.Values.Where(t => !t.IsAbstract))
                                                                         .Select(v => v.FullName);
                         completions.AddRange(
                                fullClassNames
@@ -606,6 +616,14 @@ public class CompletionEngine
             }
         }
         return new (xamlName, insretText, default, recommendedCursorOffset, triggerCompletionAfterInsert);
+    }
+
+    static string GetInsertTextForValue(string value, string? originalValue)
+    {
+        if (originalValue == null || !originalValue.Contains(':') || !value.Contains(':'))
+            return value;
+
+        return value.Split(':').Last();
     }
 
     private void ProcessStyleSetter(string setterPropertyName, XmlParser state, List<Completion> completions, string? currentAssemblyName)

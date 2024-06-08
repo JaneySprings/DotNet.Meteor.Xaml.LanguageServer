@@ -40,7 +40,7 @@ public class CompletionHandler : CompletionHandlerBase {
             .Select(p => new CompletionItem {
                 Label = p.DisplayText,
                 Detail = p.Description,
-                InsertText = p.InsertText.Insert(p.RecommendedCursorOffset ?? p.InsertText.Length, "$0"),
+                InsertText = p.InsertText,
                 InsertTextFormat = InsertTextFormat.Snippet,
                 Kind = p.Kind.ToCompletionItemKind(),
             });

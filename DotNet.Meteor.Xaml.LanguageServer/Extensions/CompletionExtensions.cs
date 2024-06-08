@@ -22,6 +22,7 @@ public static class CompletionExtensions {
             CompletionKind.Name => CompletionItemKind.Text,
 
             CompletionKind.Namespace | CompletionKind.VS_XMLNS => CompletionItemKind.Module,
+            CompletionKind.Class | CompletionKind.TargetTypeClass => CompletionItemKind.Class,
             _ => CompletionItemKind.Text
         };
     }

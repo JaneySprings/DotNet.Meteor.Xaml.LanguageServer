@@ -21,11 +21,8 @@ public class MetadataReader
             return Array.Empty<string>();
         }
 
-        var depsPath = Path.Combine(directory,
-            Path.GetFileNameWithoutExtension(path) + ".deps.json");
-        if (File.Exists(depsPath))
-            return DepsJsonAssemblyListLoader.ParseFile(depsPath);
-        return Directory.GetFiles(directory).Where(f => !Path.GetFileName(f).StartsWith("System.") && f.EndsWith(".dll"));
+        return Directory.GetFiles(directory).Where(f => f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+            && !DepsJsonAssemblyListLoader.IsAssemblyBlacklisted(Path.GetFileName(f)));
     }
 
     public Metadata? GetForTargetAssembly(string path)
