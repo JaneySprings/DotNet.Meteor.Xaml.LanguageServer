@@ -125,12 +125,6 @@ public class CompletionEngine
                 completions.AddRange(Helper.FilterEventNames(state.TagName, attributeName, attached: false)
                     .Select(v => new Completion(v, v + attributeSuffix, string.Empty, CompletionKind.Event, v.Length + attributeOffset)));
 
-                completions.AddRange(Helper.FilterTypeNames(attributeName, withAttachedPropertiesOrEventsOnly: true)
-                    .Select(x => {
-                        var insertText = GetInsertTextForValue(x, attributeName);
-                        return new Completion(x, insertText, string.Empty, CompletionKind.Class);
-                    }));
-
                 var targetType = Helper.LookupType(state.TagName);
                 if (targetType is not null)
                 {
@@ -141,6 +135,21 @@ public class CompletionEngine
                                 var insertText = GetInsertTextForValue(v.Key, attributeName);
                                 return new Completion(v.Key, insertText + attributeSuffix, v.Key, CompletionKind.Namespace, v.Key.Length + attributeOffset);
                             }));
+
+                    if (targetType.IsBindableObjectType)
+                    {
+                        if (string.IsNullOrEmpty(attributeName) || "xmlns".StartsWith(attributeName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            completions.Add(new("xmlns:", CompletionKind.Class));
+                        }
+                        completions.AddRange(
+                            Helper.FilterTypeNames(attributeName, withAttachedPropertiesOrEventsOnly: true)
+                                .Select(x => {
+                                    var insertText = GetInsertTextForValue(x, attributeName);
+                                    return new Completion(x, insertText, string.Empty, CompletionKind.Class);
+                                }));
+
+                    }
                 }
             }
         }
@@ -858,7 +867,7 @@ public class CompletionEngine
                     if (fn == "is")
                     {
                         var types = Helper.FilterTypes(default)
-                               .Where(t => t.Value.IsAvaloniaObjectType)
+                               .Where(t => t.Value.IsBindableObjectType)
                                .Select(t => t.Value);
                         if (types?.Any() == true)
                         {
@@ -966,7 +975,7 @@ public class CompletionEngine
                                     ft = ft
                                         .Where(t => t.IsGeneric == false)
                                         .Where(t => t.IsMarkupExtension == false)
-                                        .Where(t => t.IsAvaloniaObjectType || t.HasAttachedProperties);
+                                        .Where(t => t.IsBindableObjectType || t.HasAttachedProperties);
                                     completions.AddRange(ft.Select(v => new Completion(v.Name, $"{ns}|{v.Name}", CompletionKind.Class | CompletionKind.TargetTypeClass)));
                                     parsered = (parser.LastParsedPosition ?? 0) - (tn?.Length ?? 0);
                                 }
@@ -976,7 +985,7 @@ public class CompletionEngine
                                 types = types
                                         .Where(t => t.IsGeneric == false)
                                         .Where(t => t.IsMarkupExtension == false)
-                                        .Where(t => t.IsAvaloniaObjectType || t.HasAttachedProperties);
+                                        .Where(t => t.IsBindableObjectType || t.HasAttachedProperties);
                                 completions.AddRange(types.Select(v =>
                                 {
                                     var name = GetXmlnsFullName(v);
@@ -1069,7 +1078,7 @@ public class CompletionEngine
                         completions.Add(new Completion(":nth-last-child()", ":nth-last-child(", CompletionKind.Selector | CompletionKind.Enum));
                         completions.Add(new Completion("/template/", "/template/", CompletionKind.Selector | CompletionKind.Enum));
                         var types = Helper.FilterTypes(default)
-                            .Where(t => t.Value.IsAvaloniaObjectType || t.Value.HasAttachedProperties)
+                            .Where(t => t.Value.IsBindableObjectType || t.Value.HasAttachedProperties)
                             .Select(t => new Completion(t.Value.Name.Replace(":", "|"), CompletionKind.Class | CompletionKind.TargetTypeClass));
                         completions.AddRange(types);
                     }

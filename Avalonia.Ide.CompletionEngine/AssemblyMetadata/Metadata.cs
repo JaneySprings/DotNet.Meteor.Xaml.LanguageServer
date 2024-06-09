@@ -43,7 +43,7 @@ public record MetadataType(string Name)
     public bool HasAttachedEvents { get; set; }
     public bool HasStaticGetProperties { get; set; }
     public bool HasSetProperties { get; set; }
-    public bool IsAvaloniaObjectType { get; set; }
+    public bool IsBindableObjectType { get; set; }
     public MetadataTypeCtorArgument SupportCtorArgument { get; set; }
     public bool IsCompositeValue { get; set; }
     public bool IsGeneric { get; set; }

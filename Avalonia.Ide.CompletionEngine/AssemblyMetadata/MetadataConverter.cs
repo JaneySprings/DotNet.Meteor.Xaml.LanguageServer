@@ -309,9 +309,9 @@ public static class MetadataConverter
                     }
                 }
 
-                if (typeDef.FullName == "Avalonia.AvaloniaObject")
+                if (typeDef.FullName == "Microsoft.Maui.Controls.BindableObject")
                 {
-                    type.IsAvaloniaObjectType = true;
+                    type.IsBindableObjectType = true;
                 }
 
                 typeDef = typeDef.GetBaseType();
@@ -657,7 +657,7 @@ public static class MetadataConverter
     {
         var allProps = new Dictionary<string, MetadataProperty>();
 
-        foreach (var type in types.Where(t => t.Value.IsAvaloniaObjectType))
+        foreach (var type in types.Where(t => t.Value.IsBindableObjectType))
         {
             foreach (var v in type.Value.Properties.Where(p => p.HasSetter && p.HasGetter))
             {
