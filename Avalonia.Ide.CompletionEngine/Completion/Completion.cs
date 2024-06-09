@@ -51,13 +51,13 @@ public record Completion(string DisplayText,
     public override string ToString() => DisplayText;
 
     public Completion(string insertText, CompletionKind kind, string? suffix = default, byte priority = 255) :
-        this(insertText, insertText, insertText, kind, Suffix: suffix, Priority: priority)
+        this(insertText, insertText, string.Empty, kind, Suffix: suffix, Priority: priority)
     {
 
     }
 
     public Completion(string displayText, string insertText, CompletionKind kind, string? suffix = default, byte priority = 255) :
-        this(displayText, insertText, displayText, kind, Priority: priority)
+        this(displayText, insertText, string.Empty, kind, Priority: priority)
     {
 
     }

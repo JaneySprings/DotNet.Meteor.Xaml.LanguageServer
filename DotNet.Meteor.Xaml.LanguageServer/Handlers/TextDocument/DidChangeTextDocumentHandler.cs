@@ -9,9 +9,11 @@ namespace DotNet.Meteor.Xaml.LanguageServer.Handlers.TextDocument;
 
 public class DidChangeTextDocumentHandler : DidChangeTextDocumentHandlerBase {
     private readonly WorkspaceService workspaceService;
+    private readonly DiagnosticService diagnosticService;
 
-    public DidChangeTextDocumentHandler(WorkspaceService workspaceService) {
+    public DidChangeTextDocumentHandler(WorkspaceService workspaceService, DiagnosticService diagnosticService) {
         this.workspaceService = workspaceService;
+        this.diagnosticService = diagnosticService;
     }
 
     protected override TextDocumentChangeRegistrationOptions CreateRegistrationOptions(TextSynchronizationCapability capability, ClientCapabilities clientCapabilities) {
@@ -29,6 +31,7 @@ public class DidChangeTextDocumentHandler : DidChangeTextDocumentHandlerBase {
                 workspaceService.BufferService.ApplyFullChange(uri, change.Text);
             }
         }
+        _ = diagnosticService.PublishDiagnosticsAsync(uri);
         return Unit.Task;
     }
 }

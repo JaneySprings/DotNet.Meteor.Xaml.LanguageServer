@@ -19,7 +19,8 @@ public class LanguageServer {
             .WithInput(Console.OpenStandardInput())
             .WithOutput(Console.OpenStandardOutput())
             .WithServices(services => services
-                .AddSingleton<WorkspaceService>())
+                .AddSingleton<WorkspaceService>()
+                .AddSingleton<DiagnosticService>())
             .WithHandler<DidOpenTextDocumentHandler>()
             .WithHandler<DidChangeTextDocumentHandler>()
             .WithHandler<DidCloseTextDocumentHandler>()

@@ -8,9 +8,11 @@ namespace DotNet.Meteor.Xaml.LanguageServer.Handlers.TextDocument;
 
 public class DidOpenTextDocumentHandler : DidOpenTextDocumentHandlerBase {
     private readonly WorkspaceService workspaceService;
+    private readonly DiagnosticService diagnosticService;
 
-    public DidOpenTextDocumentHandler(WorkspaceService workspaceService) {
+    public DidOpenTextDocumentHandler(WorkspaceService workspaceService, DiagnosticService diagnosticService) {
         this.workspaceService = workspaceService;
+        this.diagnosticService = diagnosticService;
     }
 
     protected override TextDocumentOpenRegistrationOptions CreateRegistrationOptions(TextSynchronizationCapability capability, ClientCapabilities clientCapabilities) {
@@ -25,6 +27,8 @@ public class DidOpenTextDocumentHandler : DidOpenTextDocumentHandlerBase {
         await workspaceService.InitializeAsync(uri).ConfigureAwait(false);
 
         workspaceService.BufferService.Add(uri, text);
+        _ = diagnosticService.PublishDiagnosticsAsync(uri);
+
         return Unit.Value;
     }
 }
