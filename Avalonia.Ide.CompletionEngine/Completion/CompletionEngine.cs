@@ -125,6 +125,12 @@ public class CompletionEngine
                 completions.AddRange(Helper.FilterEventNames(state.TagName, attributeName, attached: false)
                     .Select(v => new Completion(v, v + attributeSuffix, string.Empty, CompletionKind.Event, v.Length + attributeOffset)));
 
+                completions.AddRange(Helper.FilterTypeNames(attributeName, withAttachedPropertiesOrEventsOnly: true)
+                    .Select(x => {
+                        var insertText = GetInsertTextForValue(x, attributeName);
+                        return new Completion(x, insertText, string.Empty, CompletionKind.Class);
+                    }));
+
                 var targetType = Helper.LookupType(state.TagName);
                 if (targetType is not null)
                 {
@@ -133,19 +139,8 @@ public class CompletionEngine
                             .Where(t => t.Value.IsValidForXamlContextFunc?.Invoke(currentAssemblyName, targetType, null) ?? true)
                             .Select(v => {
                                 var insertText = GetInsertTextForValue(v.Key, attributeName);
-                                return new Completion(insertText, insertText + attributeSuffix, v.Key, CompletionKind.Namespace, v.Key.Length + attributeOffset);
+                                return new Completion(v.Key, insertText + attributeSuffix, v.Key, CompletionKind.Namespace, v.Key.Length + attributeOffset);
                             }));
-
-                    if (targetType.IsAvaloniaObjectType)
-                    {
-                        if (string.IsNullOrEmpty(attributeName) || "xmlns".StartsWith(attributeName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            completions.Add(new("xmlns:", CompletionKind.Class));
-                        }
-                        completions.AddRange(
-                            Helper.FilterTypeNames(attributeName, withAttachedPropertiesOrEventsOnly: true)
-                                .Select(v => new Completion(v, v + ".", v, CompletionKind.Class)));
-                    }
                 }
             }
         }
@@ -216,7 +211,7 @@ public class CompletionEngine
 
                     completions.AddRange(Helper.FilterTypeNames(state?.AttributeValue).Select(x => {
                         var insertText = GetInsertTextForValue(x, state?.AttributeValue);
-                        return new Completion(insertText, insertText, x, cKind);
+                        return new Completion(x, insertText, string.Empty, cKind);
                     }));
                 }
                 else if ((state.AttributeName == "xmlns" || state.AttributeName?.Contains("xmlns:") == true)
@@ -238,7 +233,7 @@ public class CompletionEngine
                                 filterNamespaces(v => v.StartsWith(state.AttributeValue))
                                 .Select(v => {
                                     var insertText = GetInsertTextForValue(v, state.AttributeValue);
-                                    return new Completion(insertText, insertText, v, cKind);
+                                    return new Completion(insertText, insertText, string.Empty, cKind);
                                 }));
                     else
                     {
@@ -473,7 +468,11 @@ public class CompletionEngine
                 completions.AddRange(Helper.FilterPropertyNames(selectorTypeName, value, attached: false, hasSetter: true)
                         .Select(x => new Completion(x, CompletionKind.Property)));
 
-                completions.AddRange(Helper.FilterTypeNames(value, withAttachedPropertiesOrEventsOnly: true).Select(x => new Completion(x, CompletionKind.Class)));
+                completions.AddRange(Helper.FilterTypeNames(value, withAttachedPropertiesOrEventsOnly: true)
+                    .Select(x => {
+                        var insertText = GetInsertTextForValue(x, value);
+                        return new Completion(x, insertText, string.Empty, CompletionKind.Class);
+                    }));
             }
 
         }
@@ -659,7 +658,10 @@ public class CompletionEngine
         if (ext.State == MarkupExtensionParser.ParserStateType.StartElement)
             completions.AddRange(Helper.FilterTypeNames(ext.ElementName, markupExtensionsOnly: true)
                 .Select(t => t.EndsWith("Extension") ? t.Substring(0, t.Length - "Extension".Length) : t)
-                .Select(t => new Completion(t, CompletionKind.MarkupExtension)));
+                .Select(t => {
+                    var insertText = GetInsertTextForValue(t, ext.ElementName);
+                    return new Completion(t, insertText, CompletionKind.MarkupExtension);
+                }));
         if (ext.State == MarkupExtensionParser.ParserStateType.StartAttribute ||
             ext.State == MarkupExtensionParser.ParserStateType.InsideElement)
         {
