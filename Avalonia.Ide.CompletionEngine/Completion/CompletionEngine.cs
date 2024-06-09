@@ -101,10 +101,10 @@ public class CompletionEngine
                 curStart += dotPos + 1;
                 var split = attributeName.Split(new[] { '.' }, 2);
                 completions.AddRange(Helper.FilterPropertyNames(split[0], split[1], attached: true, hasSetter: true)
-                    .Select(x => new Completion(x, x + attributeSuffix, x, CompletionKind.AttachedProperty, x.Length + attributeOffset)));
+                    .Select(x => new Completion(x, x + attributeSuffix, string.Empty, CompletionKind.AttachedProperty, x.Length + attributeOffset)));
 
                 completions.AddRange(Helper.FilterEventNames(split[0], split[1], attached: true)
-                    .Select(v => new Completion(v, v + attributeSuffix, v, CompletionKind.AttachedEvent, v.Length + attributeOffset)));
+                    .Select(v => new Completion(v, v + attributeSuffix, string.Empty, CompletionKind.AttachedEvent, v.Length + attributeOffset)));
             }
             else if (state.TagName is not null)
             {
