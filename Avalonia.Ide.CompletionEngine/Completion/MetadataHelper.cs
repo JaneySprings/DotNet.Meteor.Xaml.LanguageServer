@@ -66,6 +66,7 @@ public class MetadataHelper
         _types = types;
     }
 
+
     public IEnumerable<KeyValuePair<string, MetadataType>> FilterTypes(string? prefix, bool withAttachedPropertiesOrEventsOnly = false, bool markupExtensionsOnly = false, bool staticGettersOnly = false, bool xamlDirectiveOnly = false)
     {
         if (_types is null)
@@ -91,23 +92,6 @@ public class MetadataHelper
     public IEnumerable<string> FilterTypeNames(string? prefix, bool withAttachedPropertiesOrEventsOnly = false, bool markupExtensionsOnly = false, bool staticGettersOnly = false, bool xamlDirectiveOnly = false)
     {
         return FilterTypes(prefix, withAttachedPropertiesOrEventsOnly, markupExtensionsOnly, staticGettersOnly, xamlDirectiveOnly).Select(s => s.Key);
-    }
-
-    public MetadataType? LookupType(string? name)
-    {
-        if (name is null)
-        {
-            return null;
-        }
-
-        MetadataType? rv = null;
-        if (!(_types?.TryGetValue(name, out rv) == true))
-        {
-            // Markup extensions used as XML elements will fail to lookup because
-            // the tag name won't include 'Extension'
-            _types?.TryGetValue($"{name}Extension", out rv);
-        }
-        return rv;
     }
 
     public IEnumerable<string> FilterPropertyNames(string typeName, string? propName,
@@ -138,7 +122,7 @@ public class MetadataHelper
         if (t == null)
             return Array.Empty<MetadataProperty>();
 
-        var e = t.Properties.Where(p => p.Name.StartsWith(propName, StringComparison.OrdinalIgnoreCase) && (hasSetter ? p.HasSetter : p.HasGetter));
+        var e = t.Properties.Where(p => p.Name.Contains(propName, StringComparison.OrdinalIgnoreCase) && (hasSetter ? p.HasSetter : p.HasGetter));
 
         if (attached.HasValue)
             e = e.Where(p => p.IsAttached == attached);
@@ -150,20 +134,69 @@ public class MetadataHelper
         return e;
     }
 
-
-    public IEnumerable<string> FilterEventNames(string typeName, string? propName,
-        bool attached)
+    public IEnumerable<string> FilterEventNames(string typeName, string? propName, bool attached)
     {
         var t = LookupType(typeName);
         propName ??= "";
         if (t == null)
             return Array.Empty<string>();
 
-        return t.Events.Where(n => n.IsAttached == attached && n.Name.StartsWith(propName, StringComparison.OrdinalIgnoreCase)).Select(n => n.Name);
+        return t.Events.Where(n => n.IsAttached == attached && n.Name.Contains(propName, StringComparison.OrdinalIgnoreCase)).Select(n => n.Name);
     }
+
+    public IEnumerable<string> FilterHintValues(MetadataType type, string? entered, string? currentAssemblyName, XmlParser? state)
+    {
+        entered ??= "";
+
+        if (type == null)
+            yield break;
+
+        if (!string.IsNullOrEmpty(currentAssemblyName) && type.XamlContextHintValuesFunc != null)
+        {
+            foreach (var v in type.XamlContextHintValuesFunc(currentAssemblyName, type, null).Where(v => v.Contains(entered, StringComparison.OrdinalIgnoreCase)))
+            {
+                yield return v;
+            }
+        }
+
+        if (type.HintValues is not null)
+        {
+            // Don't filter values here by 'StartsWith' (old behavior), provide all the hints,
+            // For VS, Intellisense will filter the results for us, other users of the completion
+            // engine (outside of VS) will need to filter later
+            // Otherwise, in VS, it's impossible to get the full list for something like brushes:
+            // Background="Red" -> Background="B", will only populate with the 'B' brushes and hitting
+            // backspace after that will keep the 'B' brushes only instead of showing the whole list
+            // WPF/UWP loads the full list of brushes and highlights starting at the B and then
+            // filters the list down from there - otherwise its difficult to keep the completion list
+            // and see all choices if making edits
+            foreach (var v in type.HintValues)
+            {
+                yield return v;
+            }
+        }
+    }
+
 
     public MetadataProperty? LookupProperty(string? typeName, string? propName)
         => LookupType(typeName)?.Properties?.FirstOrDefault(p => p.Name == propName);
+
+    public MetadataType? LookupType(string? name)
+    {
+        if (name is null)
+        {
+            return null;
+        }
+
+        MetadataType? rv = null;
+        if (!(_types?.TryGetValue(name, out rv) == true))
+        {
+            // Markup extensions used as XML elements will fail to lookup because
+            // the tag name won't include 'Extension'
+            _types?.TryGetValue($"{name}Extension", out rv);
+        }
+        return rv;
+    }
 
     public static Dictionary<string, string> GetNamespaceAliases(string xml)
     {

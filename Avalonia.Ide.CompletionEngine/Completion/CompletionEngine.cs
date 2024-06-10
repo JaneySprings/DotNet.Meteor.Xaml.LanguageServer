@@ -53,16 +53,6 @@ public class CompletionEngine
             {
                 if (tagName.Length == 0)
                 {
-                    if (state.GetParentTagName(1) is string parentTag)
-                    {
-                        if (parentTag.IndexOf('.') == -1)
-                        {
-                            completions.Add(new Completion(parentTag, $"{parentTag}.", CompletionKind.Class, priority: 1)
-                            {
-                                TriggerCompletionAfterInsert = true,
-                            });
-                        }
-                    }
                     completions.Add(new Completion("<!-- -->", "!--$0-->", CompletionKind.Snippet) { RecommendedCursorOffset = 3 });
                 }
                 completions.AddRange(Helper.FilterTypes(tagName)
@@ -239,7 +229,7 @@ public class CompletionEngine
 
                     if (state.AttributeValue.StartsWith("clr-namespace:"))
                         completions.AddRange(
-                                filterNamespaces(v => v.StartsWith(state.AttributeValue))
+                                filterNamespaces(v => v.Contains(state.AttributeValue, StringComparison.OrdinalIgnoreCase))
                                 .Select(v => {
                                     var insertText = GetInsertTextForValue(v, state.AttributeValue);
                                     return new Completion(insertText, insertText, string.Empty, cKind);
@@ -506,39 +496,6 @@ public class CompletionEngine
         }
     }
 
-    public IEnumerable<string> FilterHintValues(MetadataType type, string? entered, string? currentAssemblyName, XmlParser? state)
-    {
-        entered ??= "";
-
-        if (type == null)
-            yield break;
-
-        if (!string.IsNullOrEmpty(currentAssemblyName) && type.XamlContextHintValuesFunc != null)
-        {
-            foreach (var v in type.XamlContextHintValuesFunc(currentAssemblyName, type, null).Where(v => v.StartsWith(entered, StringComparison.OrdinalIgnoreCase)))
-            {
-                yield return v;
-            }
-        }
-
-        if (type.HintValues is not null)
-        {
-            // Don't filter values here by 'StartsWith' (old behavior), provide all the hints,
-            // For VS, Intellisense will filter the results for us, other users of the completion
-            // engine (outside of VS) will need to filter later
-            // Otherwise, in VS, it's impossible to get the full list for something like brushes:
-            // Background="Red" -> Background="B", will only populate with the 'B' brushes and hitting
-            // backspace after that will keep the 'B' brushes only instead of showing the whole list
-            // WPF/UWP loads the full list of brushes and highlights starting at the B and then
-            // filters the list down from there - otherwise its difficult to keep the completion list
-            // and see all choices if making edits
-            foreach (var v in type.HintValues)
-            {
-                yield return v;
-            }
-        }
-    }
-
     private IEnumerable<Completion> FilterHintValuesForBindingPath(string? entered, string? currentAssemblyName, string? fullText, XmlParser state)
     {
         IEnumerable<Completion> forPropertiesFromType(MetadataType? filterType, string? filter, Func<string, string>? fmtInsertText = null)
@@ -645,7 +602,7 @@ public class CompletionEngine
     {
         var kind = GetCompletionKindForHintValues(type);
 
-        var completions = FilterHintValues(type, entered, currentAssemblyName, state)
+        var completions = Helper.FilterHintValues(type, entered, currentAssemblyName, state)
             .Select(val => new Completion(val, kind)).ToList();
 
         if (type.FullName == "{BindingPath}" && state != null)
@@ -757,7 +714,7 @@ public class CompletionEngine
                         var mType = Helper.LookupType(type);
                         if (mType != null && t.SupportCtorArgument == MetadataTypeCtorArgument.HintValues)
                         {
-                            var hints = FilterHintValues(mType, prop, currentAssemblyName, state);
+                            var hints = Helper.FilterHintValues(mType, prop, currentAssemblyName, state);
                             completions.AddRange(hints.Select(x => new Completion(x, $"{type}.{x}", x, GetCompletionKindForHintValues(mType))));
                         }
 

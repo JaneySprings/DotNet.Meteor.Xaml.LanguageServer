@@ -15,11 +15,15 @@ public class WorkspaceService {
 
     public async Task InitializeAsync(DocumentUri uri) {
         try {
-            ProjectInfo = await ProjectInfo.GetProjectInfoAsync(uri).ConfigureAwait(false);
+            var projectInfo = await ProjectInfo.GetProjectInfoAsync(uri).ConfigureAwait(false);
+            if (projectInfo?.ProjectPath == ProjectInfo?.ProjectPath)
+                return;
+
+            ProjectInfo = projectInfo;
             CompletionMetadata = BuildCompletionMetadata(uri);
         } catch (Exception e) {
             CurrentSessionLogger.Error(e);
-            CurrentSessionLogger.Error($"Failed to initialize workspace: {uri}");
+            CurrentSessionLogger.Error($"Failed to initialize workspace for document: {uri}");
         }
     }
     public string FindXamlFormatterConfigFile() {
