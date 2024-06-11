@@ -19,6 +19,10 @@ public class MetadataHelper
     internal static Regex FindElementByNameRegex => _findElementByNameRegex ??=
             new($"\\s(?:(x\\:)?Name)=\"(?<AttribValue>[\\w\\:\\s\\|\\.]+)\"", RegexOptions.Compiled);
 
+    private static Regex? _findTypeNameByDataTypeRegex;
+    internal static Regex FindTypeNameByDataTypeRegex => _findTypeNameByDataTypeRegex ??=
+            new(@"{\w+:Type\s+(TypeName=\s*)?(?<TypeName>.+)}", RegexOptions.Compiled);
+
     public void SetMetadata(Metadata metadata, string xml, string? currentAssemblyName = null)
     {
         var aliases = GetNamespaceAliases(xml);
@@ -189,6 +193,14 @@ public class MetadataHelper
         }
 
         MetadataType? rv = null;
+        if (name.StartsWith('{'))
+        {
+            var match = FindTypeNameByDataTypeRegex.Match(name);
+            if (match.Success)
+            {
+                name = match.Groups["TypeName"].Value;
+            }
+        }
         if (!(_types?.TryGetValue(name, out rv) == true))
         {
             // Markup extensions used as XML elements will fail to lookup because
