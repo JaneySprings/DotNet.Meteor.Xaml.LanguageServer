@@ -317,8 +317,10 @@ internal class FieldWrapper : IFieldInformation
 
 internal class EventWrapper : IEventInformation
 {
+    private readonly EventDef _event;
     public EventWrapper(EventDef @event)
     {
+        _event = @event;
         Name = @event.Name;
         TypeFullName = @event.EventType.FullName;
         QualifiedTypeFullName = @event.EventType.AssemblyQualifiedName;
@@ -332,6 +334,18 @@ internal class EventWrapper : IEventInformation
     public string QualifiedTypeFullName { get; }
     public bool IsPublic { get; }
     public bool IsInternal { get; }
+
+    public string GetEventArgsTypeFullName() => GetEventArgsTypeSignature()?.FullName ?? "System.EventArgs";
+    public string GetEventArgsTypeName() => GetEventArgsTypeSignature()?.GetName() ?? "EventArgs";
+
+    private TypeSig? GetEventArgsTypeSignature()
+    {
+        if (_event.AddMethod == null || _event.AddMethod.Parameters.Count < 2)
+            return null;
+        
+        var eventType = _event.AddMethod.Parameters[1].Type;
+        return (eventType as GenericInstSig)?.GenericArguments.FirstOrDefault();
+    }
 }
 
 internal class MethodWrapper : IMethodInformation

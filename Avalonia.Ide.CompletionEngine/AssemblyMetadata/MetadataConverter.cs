@@ -224,7 +224,8 @@ public static class MetadataConverter
                     if (!eventDef.IsPublic)
                         continue;
 
-                    var e = new MetadataEvent(eventDef.Name, GetType(types, eventDef.TypeFullName, eventDef.QualifiedTypeFullName),
+                    var e = new MetadataEvent(eventDef.Name, eventDef.GetEventArgsTypeName(),
+                        GetType(types, eventDef.TypeFullName, eventDef.QualifiedTypeFullName),
                         types.GetValueOrDefault(typeDef.FullName, typeDef.AssemblyQualifiedName), false);
 
                     type.Events.Add(e);
@@ -255,7 +256,7 @@ public static class MetadataConverter
                                     name = name.Substring(0, name.Length - "Event".Length);
                                 }
 
-                                type.Events.Add(new MetadataEvent(name,
+                                type.Events.Add(new MetadataEvent(name, "System.EventArgs",
                                     types.GetValueOrDefault(fieldDef.ReturnTypeFullName, fieldDef.QualifiedTypeFullName),
                                     types.GetValueOrDefault(typeDef.FullName, typeDef.AssemblyQualifiedName),
                                     true));

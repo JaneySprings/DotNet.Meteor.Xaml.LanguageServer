@@ -70,5 +70,5 @@ public record MetadataProperty(string Name, MetadataType? Type, MetadataType? De
 
 public record MetadataField(string Name, MetadataType? Type, MetadataType? DeclaringType, bool IsAttached, bool IsStatic);
 
-public record MetadataEvent(string Name, MetadataType? Type, MetadataType? DeclaringType, bool IsAttached);
+public record MetadataEvent(string Name, string ArgsName, MetadataType? Type, MetadataType? DeclaringType, bool IsAttached);
 

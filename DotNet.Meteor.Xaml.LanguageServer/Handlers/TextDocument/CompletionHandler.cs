@@ -22,7 +22,7 @@ public class CompletionHandler : CompletionHandlerBase {
             DocumentSelector = LanguageServer.SelectorFoXamlDocuments,
             TriggerCharacters = new[] { "\'", "\"", " ", "<", ".", "[", "(", "#", "|", "/", "{", ":" },
             AllCommitCharacters = new[] { "\n" },
-            ResolveProvider = false,
+            ResolveProvider = true,
         };
     }
     public override async Task<CompletionList> Handle(CompletionParams request, CancellationToken cancellationToken) {
@@ -50,6 +50,9 @@ public class CompletionHandler : CompletionHandlerBase {
             : new CompletionList(completions, isIncomplete: false);
     }
     public override Task<CompletionItem> Handle(CompletionItem request, CancellationToken cancellationToken) {
+        if (request.Kind == CompletionItemKind.Event)
+            return Task.FromResult(request with { Command = Command.Create("editor.action.triggerSuggest") });
+
         return Task.FromResult(request);
     }
 

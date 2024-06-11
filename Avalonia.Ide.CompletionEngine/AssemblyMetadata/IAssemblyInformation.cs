@@ -101,4 +101,7 @@ public interface IEventInformation
     string QualifiedTypeFullName { get; }
     bool IsPublic { get; }
     bool IsInternal { get; }
+
+    public string GetEventArgsTypeFullName();
+    public string GetEventArgsTypeName();
 }
