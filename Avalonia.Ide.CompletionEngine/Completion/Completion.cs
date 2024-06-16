@@ -63,4 +63,5 @@ public record Completion(string DisplayText,
     }
 
     public bool TriggerCompletionAfterInsert { get; init; }
+    public object? Data { get; init; }
 }

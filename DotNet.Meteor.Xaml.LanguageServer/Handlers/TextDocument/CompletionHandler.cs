@@ -1,7 +1,6 @@
 using Avalonia.Ide.CompletionEngine;
 using DotNet.Meteor.Xaml.LanguageServer.Extensions;
 using DotNet.Meteor.Xaml.LanguageServer.Services;
-using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -25,25 +24,24 @@ public class CompletionHandler : CompletionHandlerBase {
             ResolveProvider = true,
         };
     }
+
     public override async Task<CompletionList> Handle(CompletionParams request, CancellationToken cancellationToken) {
+        string documentPath = request.TextDocument.Uri.GetFileSystemPath();
         string? text = workspaceService.BufferService.GetTextTillPosition(request.TextDocument.Uri, request.Position);
         if (text == null)
             return new CompletionList();
 
-        var metadata = await InitializeCompletionEngineAsync(request.TextDocument.Uri).ConfigureAwait(false);
+        var metadata = await workspaceService.InitializeCompletionEngineAsync(request.TextDocument.Uri).ConfigureAwait(false);
         if (metadata == null)
             return new CompletionList();
 
         var set = completionEngine?.GetCompletions(metadata!, text, text.Length, workspaceService.ProjectInfo?.AssemblyName);
+        if (set?.Completions.Count == 1 && set.Completions[0].Data is MetadataEvent)
+            return new CompletionList(set.Completions[0].ResolveEventCompletionItem(documentPath));
+
         var completions = set?.Completions
             .Where(p => !p.DisplayText.Contains('`'))
-            .Select(p => new CompletionItem {
-                Label = p.DisplayText,
-                Detail = p.Description,
-                InsertText = p.InsertText,
-                InsertTextFormat = InsertTextFormat.Snippet,
-                Kind = p.Kind.ToCompletionItemKind(),
-            });
+            .Select(p => p.ToCompletionItem());
 
         return completions == null
             ? new CompletionList(true)
@@ -54,15 +52,5 @@ public class CompletionHandler : CompletionHandlerBase {
             return Task.FromResult(request with { Command = Command.Create("editor.action.triggerSuggest") });
 
         return Task.FromResult(request);
-    }
-
-    private async Task<Metadata?> InitializeCompletionEngineAsync(DocumentUri uri) {
-        if (workspaceService.ProjectInfo is not { IsAssemblyExist: true })
-            return null;
-
-        if (workspaceService.ProjectInfo.IsAssemblyExist && workspaceService.CompletionMetadata == null)
-            await workspaceService.InitializeAsync(uri).ConfigureAwait(false);
-
-        return workspaceService.CompletionMetadata;
     }
 }

@@ -164,9 +164,12 @@ public class CompletionEngine
                            BuildCompletionsForMarkupExtension(prop, completions, fullText, state,
                                textToCursor.Substring(state.CurrentValueStart.Value), currentAssemblyName);
             }
-            else if (type != null && type.Events.FirstOrDefault(x => x.Name == state.AttributeName) != null)
+            else if (type != null && state.TagName != null && type.Events.FirstOrDefault(x => x.Name == state.AttributeName) != null)
             {
-                completions.Add(new Completion("<New Event Handler>", $"{state.TagName}_{state.AttributeName}", CompletionKind.Snippet));
+                var tagName = GetInsertTextForValue(state.TagName, state.TagName);
+                completions.Add(new Completion("<New Event Handler>", $"{tagName}_{state.AttributeName}", CompletionKind.Snippet) {
+                    Data = type.Events.First(x => x.Name == state.AttributeName)
+                });
             }
             else
             {

@@ -26,6 +26,16 @@ public class WorkspaceService {
             CurrentSessionLogger.Error($"Failed to initialize workspace for document: {uri}");
         }
     }
+    public async Task<Metadata?> InitializeCompletionEngineAsync(DocumentUri uri) {
+        if (ProjectInfo is not { IsAssemblyExist: true })
+            return null;
+
+        if (ProjectInfo.IsAssemblyExist && CompletionMetadata == null)
+            await InitializeAsync(uri).ConfigureAwait(false);
+
+        return CompletionMetadata;
+    }
+
     public string FindXamlFormatterConfigFile() {
         if (ProjectInfo == null)
             return string.Empty;
