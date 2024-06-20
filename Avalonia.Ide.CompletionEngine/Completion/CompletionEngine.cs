@@ -235,7 +235,8 @@ public class CompletionEngine
                     {
                         var shortAttributeValue = GetInsertTextForValue(state.AttributeValue, state.AttributeValue);
                         completions.AddRange(
-                                filterNamespaces(v => v.Contains(shortAttributeValue, StringComparison.OrdinalIgnoreCase))
+                                filterNamespaces(v => v.StartsWith("clr-namespace", StringComparison.OrdinalIgnoreCase)
+                                    && v.Contains(shortAttributeValue, StringComparison.OrdinalIgnoreCase))
                                 .Select(v => {
                                     var insertText = GetInsertTextForValue(v, state.AttributeValue);
                                     return new Completion(insertText, insertText, string.Empty, cKind);
