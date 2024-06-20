@@ -166,10 +166,11 @@ public class CompletionEngine
             }
             else if (type != null && state.TagName != null && type.Events.FirstOrDefault(x => x.Name == state.AttributeName) != null)
             {
-                var tagName = GetInsertTextForValue(state.TagName, state.TagName);
-                completions.Add(new Completion("<New Event Handler>", $"{tagName}_{state.AttributeName}", CompletionKind.Snippet) {
-                    Data = type.Events.First(x => x.Name == state.AttributeName)
-                });
+                // TODO: To be implemented in the next minor release
+                // var tagName = GetInsertTextForValue(state.TagName, state.TagName);
+                // completions.Add(new Completion("<New Event Handler>", $"{tagName}_{state.AttributeName}", CompletionKind.Snippet) {
+                //     Data = type.Events.First(x => x.Name == state.AttributeName)
+                // });
             }
             else
             {
@@ -231,12 +232,15 @@ public class CompletionEngine
                     var cKind = CompletionKind.Namespace | CompletionKind.VS_XMLNS;
 
                     if (state.AttributeValue.StartsWith("clr-namespace:"))
+                    {
+                        var shortAttributeValue = GetInsertTextForValue(state.AttributeValue, state.AttributeValue);
                         completions.AddRange(
-                                filterNamespaces(v => v.Contains(state.AttributeValue, StringComparison.OrdinalIgnoreCase))
+                                filterNamespaces(v => v.Contains(shortAttributeValue, StringComparison.OrdinalIgnoreCase))
                                 .Select(v => {
                                     var insertText = GetInsertTextForValue(v, state.AttributeValue);
                                     return new Completion(insertText, insertText, string.Empty, cKind);
                                 }));
+                    }
                     else
                     {
                         if ("using:".StartsWith(state.AttributeValue))
