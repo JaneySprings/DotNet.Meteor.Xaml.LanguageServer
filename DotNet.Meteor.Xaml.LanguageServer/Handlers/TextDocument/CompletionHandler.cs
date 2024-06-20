@@ -48,7 +48,7 @@ public class CompletionHandler : CompletionHandlerBase {
             : new CompletionList(completions, isIncomplete: false);
     }
     public override Task<CompletionItem> Handle(CompletionItem request, CancellationToken cancellationToken) {
-        if (request.Kind == CompletionItemKind.Event)
+        if (request.Kind == CompletionItemKind.Event || request.Kind == CompletionItemKind.Property)
             return Task.FromResult(request with { Command = Command.Create("editor.action.triggerSuggest") });
 
         return Task.FromResult(request);
