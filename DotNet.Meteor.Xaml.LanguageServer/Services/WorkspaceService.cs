@@ -16,7 +16,7 @@ public class WorkspaceService {
     public async Task InitializeAsync(DocumentUri uri) {
         try {
             var projectInfo = await ProjectInfo.GetProjectInfoAsync(uri).ConfigureAwait(false);
-            if (projectInfo?.ProjectPath == ProjectInfo?.ProjectPath)
+            if (projectInfo?.Path == ProjectInfo?.Path)
                 return;
 
             ProjectInfo = projectInfo;
@@ -54,7 +54,7 @@ public class WorkspaceService {
     }
 
     private Metadata? BuildCompletionMetadata(DocumentUri uri) {
-        var outputAssemblyPath = ProjectInfo?.AssemblyPath();
+        var outputAssemblyPath = ProjectInfo?.AssemblyPath;
         if (string.IsNullOrEmpty(outputAssemblyPath)) {
             CurrentSessionLogger.Error($"Failed to get output assembly path for {uri}");
             return null;

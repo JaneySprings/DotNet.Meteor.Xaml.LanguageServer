@@ -1,3 +1,4 @@
+using DotNet.Meteor.Common;
 using NLog;
 
 namespace DotNet.Meteor.Xaml.LanguageServer.Logging;

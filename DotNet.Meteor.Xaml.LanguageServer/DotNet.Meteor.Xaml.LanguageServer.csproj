@@ -15,10 +15,10 @@
 
   <ItemGroup>
     <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9" />
-    <PackageReference Include="NLog" Version="5.2.4" />
 
     <ProjectReference Include="..\Avalonia.Ide.CompletionEngine.DnlibMetadataProvider\Avalonia.Ide.CompletionEngine.DnlibMetadataProvider.csproj" />
     <ProjectReference Include="..\Avalonia.Ide.CompletionEngine\Avalonia.Ide.CompletionEngine.csproj" />
     <ProjectReference Include="..\Xavalon.XamlStyler\XamlStyler.csproj" />
+    <ProjectReference Include="..\..\DotNet.Meteor.Common\DotNet.Meteor.Common.csproj" />
   </ItemGroup>
 </Project>
