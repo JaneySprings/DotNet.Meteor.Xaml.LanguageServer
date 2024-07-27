@@ -92,9 +92,6 @@ public class CompletionEngine
                 var split = attributeName.Split(new[] { '.' }, 2);
                 completions.AddRange(Helper.FilterPropertyNames(split[0], split[1], attached: true, hasSetter: true)
                     .Select(x => new Completion(x, x + attributeSuffix, string.Empty, CompletionKind.AttachedProperty, x.Length + attributeOffset)));
-
-                completions.AddRange(Helper.FilterEventNames(split[0], split[1], attached: true)
-                    .Select(v => new Completion(v, v + attributeSuffix, string.Empty, CompletionKind.AttachedEvent, v.Length + attributeOffset)));
             }
             else if (state.TagName is not null)
             {
@@ -112,7 +109,7 @@ public class CompletionEngine
                         CompletionKind.Property, 9 /*recommendedCursorOffset*/));
                 }
 
-                completions.AddRange(Helper.FilterEventNames(state.TagName, attributeName, attached: false)
+                completions.AddRange(Helper.FilterEventNames(state.TagName, attributeName)
                     .Select(v => new Completion(v, v + attributeSuffix, string.Empty, CompletionKind.Event, v.Length + attributeOffset)));
 
                 var targetType = Helper.LookupType(state.TagName);

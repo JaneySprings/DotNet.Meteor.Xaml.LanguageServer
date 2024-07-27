@@ -138,14 +138,14 @@ public class MetadataHelper
         return e;
     }
 
-    public IEnumerable<string> FilterEventNames(string typeName, string? propName, bool attached)
+    public IEnumerable<string> FilterEventNames(string typeName, string? propName)
     {
         var t = LookupType(typeName);
         propName ??= "";
         if (t == null)
             return Array.Empty<string>();
 
-        return t.Events.Where(n => n.IsAttached == attached && n.Name.Contains(propName, StringComparison.OrdinalIgnoreCase)).Select(n => n.Name);
+        return t.Events.Where(n => n.Name.Contains(propName, StringComparison.OrdinalIgnoreCase)).Select(n => n.Name);
     }
 
     public IEnumerable<string> FilterHintValues(MetadataType type, string? entered, string? currentAssemblyName, XmlParser? state)

@@ -304,7 +304,7 @@ public static class MetadataConverter
             }
 
             type.HasAttachedProperties = type.Properties.Any(p => p.IsAttached);
-            type.HasAttachedEvents = type.Events.Any(e => e.IsAttached);
+            type.HasAttachedEvents = false;// not supported in MAUI/Xamarin
             type.HasStaticGetProperties = type.Properties.Any(p => p.IsStatic && p.HasGetter);
             type.HasSetProperties = type.Properties.Any(p => !p.IsStatic && p.HasSetter);
             if (typepseudoclasses.Count > 0)
