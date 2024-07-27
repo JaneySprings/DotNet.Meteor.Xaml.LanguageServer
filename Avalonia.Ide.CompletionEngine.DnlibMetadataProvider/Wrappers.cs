@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Avalonia.Ide.CompletionEngine.AssemblyMetadata;
 using dnlib.DotNet;
 
@@ -72,10 +73,12 @@ internal class TypeWrapper : ITypeInformation
 
     public IEnumerable<IPropertyInformation> Properties => _type.Properties
         //Filter indexer properties
+
         .Where(p =>
             (p.GetMethod?.IsPublicOrInternal() == true && p.GetMethod.Parameters.Count == (p.GetMethod.IsStatic ? 0 : 1))
             || (p.SetMethod?.IsPublicOrInternal() == true && p.SetMethod.Parameters.Count == (p.SetMethod.IsStatic ? 1 : 2)))
         // Filter property overrides
+
         .Where(p => !p.Name.Contains("."))
         .Select(p => new PropertyWrapper(p));
     public bool IsEnum => _type.IsEnum;
@@ -318,6 +321,7 @@ internal class FieldWrapper : IFieldInformation
 internal class EventWrapper : IEventInformation
 {
     private readonly EventDef _event;
+    static readonly List<(string, string)> DefaultEventHandlerArgs = new List<(string, string)> { ("System.Object", "sender"), ("System.EventArgs", "e") };
     public EventWrapper(EventDef @event)
     {
         _event = @event;
@@ -335,16 +339,72 @@ internal class EventWrapper : IEventInformation
     public bool IsPublic { get; }
     public bool IsInternal { get; }
 
-    public string GetEventArgsTypeFullName() => GetEventArgsTypeSignature()?.FullName ?? "System.EventArgs";
-    public string GetEventArgsTypeName() => GetEventArgsTypeSignature()?.GetName() ?? "EventArgs";
-
-    private TypeSig? GetEventArgsTypeSignature()
+    public List<(string typeName, string name)> GetEventHandlerArgsSignatures()
     {
-        if (_event.AddMethod == null || _event.AddMethod.Parameters.Count < 2)
-            return null;
-        
-        var eventType = _event.AddMethod.Parameters[1].Type;
-        return (eventType as GenericInstSig)?.GenericArguments.FirstOrDefault();
+        var result = new List<(string typeName, string name)>();
+        TypeDef delegateType = _event.EventType.ResolveTypeDef();
+        if (delegateType is null)
+        {
+            return DefaultEventHandlerArgs;
+        }
+        TypeSig eventType = _event.EventType.ToTypeSig();
+        IList<TypeSig> genericArguments = Array.Empty<TypeSig>();
+        if (eventType is GenericInstSig genericInstSig)
+        {
+            genericArguments = genericInstSig.GenericArguments;
+        }
+        MethodDef? invokeMethod = delegateType.Methods.FirstOrDefault(m => m.Name == "Invoke");
+        if (invokeMethod is null)
+        {
+            return DefaultEventHandlerArgs;
+        }
+        foreach (var p in invokeMethod.Parameters)
+        {
+            if (String.IsNullOrEmpty(p.Name))//this as first argument
+            {
+                continue;
+            }
+            string typeName = GetTypeName(p.Type, genericArguments);
+            result.Add((typeName, p.Name));
+        }
+        return result;
+    }
+    static string GetTypeName(TypeSig type, IList<TypeSig> genericArguments)
+    {
+        if (type == null)
+            return "void"; // Handle methods with no return type (void)
+
+        if (type is ClassSig || type is ValueTypeSig)
+        {
+            ClassOrValueTypeSig classOrValueTypeSig = (ClassOrValueTypeSig)type;
+            return classOrValueTypeSig.FullName;
+        }
+
+        if (type is GenericInstSig genericInstSig)
+        {
+            string genericTypeFullName = genericInstSig.GenericType.TypeDefOrRef.FullName;
+            int backtickIndex = genericTypeFullName.LastIndexOf('`');
+            if (backtickIndex >= 0)
+            {
+                genericTypeFullName = genericTypeFullName.Substring(0, backtickIndex);
+            }
+            var genericArgumentsNames = new List<string>();
+            for (int i = 0; i < genericInstSig.GenericArguments.Count; i++)
+            {
+                genericArgumentsNames.Add(GetTypeName(genericInstSig.GenericArguments[i], genericInstSig.GenericArguments));
+            }
+            return $"{genericTypeFullName}<{string.Join(", ", genericArgumentsNames)}>";
+        }
+        if (type is GenericVar genericMVar)
+        {
+            var argType = genericArguments[(int)genericMVar.Number];
+            if (argType == type)
+            {
+                return argType.FullName;
+            }
+            return GetTypeName(argType, genericArguments);
+        }
+        return type.FullName;
     }
 }
 

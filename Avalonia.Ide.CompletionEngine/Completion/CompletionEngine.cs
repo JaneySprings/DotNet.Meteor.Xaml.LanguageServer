@@ -167,10 +167,10 @@ public class CompletionEngine
             else if (type != null && state.TagName != null && type.Events.FirstOrDefault(x => x.Name == state.AttributeName) != null)
             {
                 // TODO: To be implemented in the next minor release
-                // var tagName = GetInsertTextForValue(state.TagName, state.TagName);
-                // completions.Add(new Completion("<New Event Handler>", $"{tagName}_{state.AttributeName}", CompletionKind.Snippet) {
-                //     Data = type.Events.First(x => x.Name == state.AttributeName)
-                // });
+                var tagName = GetInsertTextForValue(state.TagName, state.TagName);
+                completions.Add(new Completion("<New Event Handler>", $"{tagName}_{state.AttributeName}", CompletionKind.Snippet) {
+                    Data = type.Events.First(x => x.Name == state.AttributeName)
+                });
             }
             else
             {
@@ -857,7 +857,7 @@ public class CompletionEngine
                         var ton = parser.TemplateOwner;
                         if (!string.IsNullOrEmpty(ton))
                         {
-                            //If it hat TemplateOwner 
+                            //If it hat TemplateOwner
                             if (Helper.FilterTypes(ton)
                                 .Where(kvp => kvp.Value.TemplateParts.Any())
                                 .Select(kvp => kvp.Value)

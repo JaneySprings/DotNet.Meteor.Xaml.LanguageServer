@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Avalonia.Ide.CompletionEngine.AssemblyMetadata;
 
 namespace Avalonia.Ide.CompletionEngine;
 
@@ -51,9 +52,9 @@ public record MetadataType(string Name)
     public string? AssemblyQualifiedName { get; set; }
     public bool IsNullable { get; init; }
     public MetadataType? UnderlyingType { get; init; }
-    public IEnumerable<(MetadataType Type,string Name)> TemplateParts { get; internal set; } = 
+    public IEnumerable<(MetadataType Type,string Name)> TemplateParts { get; internal set; } =
         Array.Empty<(MetadataType Type, string Name)>();
-    public bool IsAbstract { get; internal set; } = false;
+    public bool IsAbstract { get; internal set; }
 }
 
 public enum MetadataTypeCtorArgument
@@ -70,5 +71,8 @@ public record MetadataProperty(string Name, MetadataType? Type, MetadataType? De
 
 public record MetadataField(string Name, MetadataType? Type, MetadataType? DeclaringType, bool IsAttached, bool IsStatic);
 
-public record MetadataEvent(string Name, string ArgsName, MetadataType? Type, MetadataType? DeclaringType, bool IsAttached);
+public record MetadataEvent(IEventInformation EventInformation) {
+    public string Name => EventInformation.Name;
+    public List<(string TypeName, string Name)> EventHandlerArgsSignatures => EventInformation.GetEventHandlerArgsSignatures();
+}
 

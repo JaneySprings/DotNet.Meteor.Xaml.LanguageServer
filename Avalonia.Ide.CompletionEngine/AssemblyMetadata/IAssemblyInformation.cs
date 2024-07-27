@@ -102,6 +102,5 @@ public interface IEventInformation
     bool IsPublic { get; }
     bool IsInternal { get; }
 
-    public string GetEventArgsTypeFullName();
-    public string GetEventArgsTypeName();
+    public List<(string typeName, string name)> GetEventHandlerArgsSignatures();
 }
