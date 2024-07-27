@@ -223,11 +223,7 @@ public static class MetadataConverter
                 {
                     if (!eventDef.IsPublic)
                         continue;
-
-                    var e = new MetadataEvent(eventDef.Name, eventDef.GetEventArgsTypeName(),
-                        GetType(types, eventDef.TypeFullName, eventDef.QualifiedTypeFullName),
-                        types.GetValueOrDefault(typeDef.FullName, typeDef.AssemblyQualifiedName), false);
-
+                    var e = new MetadataEvent(eventDef);
                     type.Events.Add(e);
                 }
 
@@ -248,20 +244,8 @@ public static class MetadataConverter
                     {
                         if (fieldDef.IsStatic && fieldDef.IsPublic)
                         {
-                            if ((fieldDef.IsRoutedEvent || fieldDef.Name.EndsWith("Event", StringComparison.OrdinalIgnoreCase)))
-                            {
-                                var name = fieldDef.Name;
-                                if (fieldDef.Name.EndsWith("Event", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    name = name.Substring(0, name.Length - "Event".Length);
-                                }
-
-                                type.Events.Add(new MetadataEvent(name, "System.EventArgs",
-                                    types.GetValueOrDefault(fieldDef.ReturnTypeFullName, fieldDef.QualifiedTypeFullName),
-                                    types.GetValueOrDefault(typeDef.FullName, typeDef.AssemblyQualifiedName),
-                                    true));
-                            }
-                            else if (fieldDef.Name.EndsWith("Property", StringComparison.OrdinalIgnoreCase)
+                            //RoutedEvents are not supported in MAUI/Xamarin
+                            if (fieldDef.Name.EndsWith("Property", StringComparison.OrdinalIgnoreCase)
                                 && fieldDef.ReturnTypeFullName.StartsWith("Microsoft.Maui.Controls.BindableProperty")
                                 )
                             {
@@ -680,7 +664,7 @@ public static class MetadataConverter
             bindingType.SupportCtorArgument = MetadataTypeCtorArgument.None;
             for (var i = 0; i < bindingType.Properties.Count; i++)
             {
-                if (bindingType.Properties[i].Name == "Path" 
+                if (bindingType.Properties[i].Name == "Path"
                     || bindingType.Properties[i].Name == "FallbackValue"
                     || bindingType.Properties[i].Name == "TargetNullValue")
                 {

@@ -46,8 +46,16 @@ public static class DepsJsonAssemblyListLoader
     }
 
     public static bool IsAssemblyBlacklisted(string dllName) {
-        return dllName.StartsWith("System.", StringComparison.OrdinalIgnoreCase)
-            || dllName.StartsWith("Microsoft.CSharp.", StringComparison.OrdinalIgnoreCase)
+        if (
+            dllName.StartsWith("System.Runtime.dll", StringComparison.OrdinalIgnoreCase) ||
+            dllName.StartsWith("System.ComponentModel.EventBasedAsync.dll", StringComparison.OrdinalIgnoreCase) ||
+            dllName.StartsWith("System.ObjectModel.dll", StringComparison.OrdinalIgnoreCase) ||
+            dllName.StartsWith("System.Private.CoreLib.dll", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        return dllName.StartsWith("System.", StringComparison.OrdinalIgnoreCase) ||
+             dllName.StartsWith("Microsoft.CSharp.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.VisualBasic.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.Win32.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.Extensions.", StringComparison.OrdinalIgnoreCase)
