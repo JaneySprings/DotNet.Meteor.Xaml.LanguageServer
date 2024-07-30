@@ -13,6 +13,9 @@ public class WorkspaceService {
     public ProjectInfo? ProjectInfo { get; private set; }
     public BufferService BufferService { get; } = new();
 
+    public Task InitializeAsync(string filePath) {
+        return InitializeAsync(DocumentUri.FromFileSystemPath(filePath));
+    }
     public async Task InitializeAsync(DocumentUri uri) {
         try {
             var projectInfo = await ProjectInfo.GetProjectInfoAsync(uri).ConfigureAwait(false);

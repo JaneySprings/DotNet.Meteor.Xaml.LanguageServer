@@ -32,15 +32,19 @@ public class LanguageServer {
             .WithHandler<CompletionHandler>()
             // .WithHandler<CodeActionHandler>()
             // .WithHandler<DefinitionHandler>()
-            .OnStarted(StartedHandlerAsync)
+            .OnStarted((s, ct) => StartedHandlerAsync(s, args.FirstOrDefault(), ct))
         ).ConfigureAwait(false);
 
         await server.WaitForExit.ConfigureAwait(false);
     }
-    private static Task StartedHandlerAsync(ILanguageServer server, CancellationToken cancellationToken) {
+    private static async Task StartedHandlerAsync(ILanguageServer server, string? targetProject, CancellationToken _) {
         var clientSettings = server.Workspace.ClientSettings;
         ObserveClientProcess(clientSettings.ProcessId);
-        return Task.CompletedTask;
+
+        if (!string.IsNullOrEmpty(targetProject)) {
+            var workspaceService = server.Services.GetService<WorkspaceService>()!;
+            await workspaceService.InitializeAsync(targetProject).ConfigureAwait(false);
+        }
     }
     private static void ObserveClientProcess(long? pid) {
         if (pid == null || pid <= 0)
