@@ -1,5 +1,6 @@
 using System.Text;
 using Avalonia.Ide.CompletionEngine;
+using DotNet.Meteor.Xaml.LanguageServer.Syntax;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -56,9 +57,11 @@ public static class CompletionExtensions {
         SyntaxTree tree = CSharpSyntaxTree.ParseText(File.ReadAllText(codeBehindDocumentPath));
         CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
 
-        EventSyntaxWalker eventSyntaxWalker = new();
+        CodeBehindSyntaxWalker eventSyntaxWalker = new();
         eventSyntaxWalker.Visit(root);
         foreach (var methodSignatureInfo in eventSyntaxWalker.MethodSignatureInfos) {
+            if (methodSignatureInfo.ArgumentTypes.Count != metadataEvent.EventHandlerArgsSignatures.Count)
+                continue;
             CompletionItem item = new CompletionItem {
                 Label = methodSignatureInfo.Name,
                 Detail = string.Join(", ", methodSignatureInfo.ArgumentTypes),
@@ -69,7 +72,7 @@ public static class CompletionExtensions {
             completionItems.Add(item);
         }
         string eventHandlerName = eventSyntaxWalker.GetUniqueMethodName(methodName);
-        EventSyntaxRewriter eventSyntaxRewriter = new(eventSyntaxWalker, eventHandlerName, metadataEvent);
+        BindEventSyntaxRewriter eventSyntaxRewriter = new(eventSyntaxWalker, eventHandlerName, metadataEvent);
         var newRoot = eventSyntaxRewriter.Visit(root);
 
         var documentEdit = new TextDocumentEdit {
@@ -101,88 +104,5 @@ public static class CompletionExtensions {
             },
         });
         return completionItems;
-    }
-}
-
-public class EventSyntaxWalker : CSharpSyntaxWalker {
-    public string MainClassName { get; private set; } = string.Empty;
-    public SyntaxTriviaList LeftIndentationTrivia { get; private set; }
-    public SyntaxTriviaList RightIndentationTrivia { get; private set; }
-    public List<MethodSignatureInfo> MethodSignatureInfos { get; } = new();
-
-    public override void VisitClassDeclaration(ClassDeclarationSyntax node) {
-        base.VisitClassDeclaration(node);
-    }
-    public override void VisitConstructorInitializer(ConstructorInitializerSyntax node) {
-        base.VisitConstructorInitializer(node);
-    }
-    public override void VisitInvocationExpression(InvocationExpressionSyntax node) {
-        base.VisitInvocationExpression(node);
-        if (node.Expression is IdentifierNameSyntax identifierNameSyntax) {
-            if (identifierNameSyntax.Identifier.Text == "InitializeComponent") {
-                if (node.Parent?.Parent?.Parent is ConstructorDeclarationSyntax constructorDeclarationSyntax) {
-                    LeftIndentationTrivia = constructorDeclarationSyntax.GetLeadingTrivia();
-                    RightIndentationTrivia = constructorDeclarationSyntax.GetTrailingTrivia();
-                    MainClassName = constructorDeclarationSyntax.Identifier.Text;
-                }
-            }
-        }
-    }
-
-    public override void VisitMethodDeclaration(MethodDeclarationSyntax node) {
-        base.VisitMethodDeclaration(node);
-        MethodSignatureInfo methodSignatureInfo = new() { Name = node.Identifier.Text };
-        foreach (var parameter in node.ParameterList.Parameters) {
-            methodSignatureInfo.ArgumentTypes.Add(parameter.Type?.ToString() ?? string.Empty);
-        }
-        MethodSignatureInfos.Add(methodSignatureInfo);
-    }
-    public class MethodSignatureInfo {
-        public string Name { get; set; } = string.Empty;
-        public List<string> ArgumentTypes { get; set; } = new();
-    }
-    public string GetUniqueMethodName(string insertText) {
-        string methodName = insertText;
-        for(int i = 0; IsMethodNameExists(methodName); i++) {
-            methodName = $"{insertText}_{++i}";
-        }
-        return methodName;
-    }
-    private bool IsMethodNameExists(string methodName) {
-        return MethodSignatureInfos.Any(p => p.Name == methodName);
-    }
-}
-
-public class EventSyntaxRewriter : CSharpSyntaxRewriter {
-    public EventSyntaxRewriter(EventSyntaxWalker walker, string eventHandlerName, MetadataEvent metadataEvent) {
-        MainClassName = walker.MainClassName;
-        LeftIndentationTrivia = walker.LeftIndentationTrivia;
-        RightIndentationTrivia = walker.RightIndentationTrivia;
-        EventHandlerName = eventHandlerName;
-        MetadataEvent = metadataEvent;
-    }
-
-    private string MainClassName { get; }
-    private SyntaxTriviaList LeftIndentationTrivia { get; }
-    private SyntaxTriviaList RightIndentationTrivia { get; }
-    private string EventHandlerName { get; }
-    public MetadataEvent MetadataEvent { get; }
-
-    public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node) {
-        if (node.Identifier.Text != MainClassName)
-            return base.VisitClassDeclaration(node);
-        string methodHandler = GeneratedHandlerMethod();
-        var method = SyntaxFactory.ParseMemberDeclaration(methodHandler)?.WithLeadingTrivia(LeftIndentationTrivia)?.WithTrailingTrivia(RightIndentationTrivia);
-        if (method == null)
-            return base.VisitClassDeclaration(node);
-        var result = node.AddMembers(method);
-        return result;
-    }
-    private string GeneratedHandlerMethod() {
-        string methodName = EventHandlerName;
-        if (MetadataEvent.EventHandlerArgsSignatures.Count == 0)
-            return $"private void {methodName}() {{ }}";
-        string arguments = string.Join(", ", MetadataEvent.EventHandlerArgsSignatures.Select(p => $"{p.TypeName} {p.Name}"));
-        return $"private void {methodName}({arguments}) {{ }}";
     }
 }
