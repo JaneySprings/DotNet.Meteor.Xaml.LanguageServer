@@ -44,11 +44,12 @@ public static class CompletionExtensions {
         };
     }
 
-    public static CompletionItem ResolveEventCompletionItem(this Completion completion, string xamlDocumentPath) {
+    public static List<CompletionItem> ResolveEventCompletionItem(this Completion completion, string xamlDocumentPath) {
         var codeBehindDocumentPath = Path.ChangeExtension(xamlDocumentPath, ".xaml.cs");
         if (!File.Exists(codeBehindDocumentPath))
-            return completion.ToCompletionItem();
+            return new List<CompletionItem>() { completion.ToCompletionItem() };
 
+        List<CompletionItem> completionItems = new();
         var metadataEvent = (MetadataEvent)completion.Data!;
         string methodName = completion.InsertText;
 
@@ -57,18 +58,27 @@ public static class CompletionExtensions {
 
         EventSyntaxWalker eventSyntaxWalker = new();
         eventSyntaxWalker.Visit(root);
-
-        EventSyntaxRewriter eventSyntaxRewriter = new(eventSyntaxWalker, completion);
+        foreach (var methodSignatureInfo in eventSyntaxWalker.MethodSignatureInfos) {
+            CompletionItem item = new CompletionItem {
+                Label = methodSignatureInfo.Name,
+                Detail = string.Join(", ", methodSignatureInfo.ArgumentTypes),
+                InsertText = methodSignatureInfo.Name,
+                InsertTextFormat = InsertTextFormat.Snippet,
+                Kind = CompletionItemKind.Method,
+            };
+            completionItems.Add(item);
+        }
+        string eventHandlerName = eventSyntaxWalker.GetUniqueMethodName(methodName);
+        EventSyntaxRewriter eventSyntaxRewriter = new(eventSyntaxWalker, eventHandlerName, metadataEvent);
         var newRoot = eventSyntaxRewriter.Visit(root);
 
-        string newText = newRoot.ToString();
         var documentEdit = new TextDocumentEdit {
             TextDocument = new OptionalVersionedTextDocumentIdentifier {
                 Uri = DocumentUri.FromFileSystemPath(codeBehindDocumentPath),
             },
             Edits = new[] {
                 new TextEdit {
-                    NewText = newText,
+                    NewText = newRoot.ToString(),
                     Range = new Range {
                         Start = new Position(0, 0),
                         End = new Position(int.MaxValue, int.MaxValue)
@@ -77,9 +87,10 @@ public static class CompletionExtensions {
             }
         };
 
-        return new CompletionItem {
+        completionItems.Add(new CompletionItem {
             Label = completion.DisplayText,
-            InsertText = completion.InsertText, //todo
+            InsertText = eventHandlerName,
+            Detail = $"Bind event to a newly created method called '{eventHandlerName}'.",
             Kind = completion.Kind.ToCompletionItemKind(),
             Command = new Command {
                 Name = "dotnet-meteor.xaml.replaceCode",
@@ -88,7 +99,8 @@ public static class CompletionExtensions {
                    JToken.FromObject(documentEdit)
                 }
             },
-        };
+        });
+        return completionItems;
     }
 }
 
@@ -96,6 +108,7 @@ public class EventSyntaxWalker : CSharpSyntaxWalker {
     public string MainClassName { get; private set; } = string.Empty;
     public SyntaxTriviaList LeftIndentationTrivia { get; private set; }
     public SyntaxTriviaList RightIndentationTrivia { get; private set; }
+    public List<MethodSignatureInfo> MethodSignatureInfos { get; } = new();
 
     public override void VisitClassDeclaration(ClassDeclarationSyntax node) {
         base.VisitClassDeclaration(node);
@@ -115,19 +128,45 @@ public class EventSyntaxWalker : CSharpSyntaxWalker {
             }
         }
     }
+
+    public override void VisitMethodDeclaration(MethodDeclarationSyntax node) {
+        base.VisitMethodDeclaration(node);
+        MethodSignatureInfo methodSignatureInfo = new() { Name = node.Identifier.Text };
+        foreach (var parameter in node.ParameterList.Parameters) {
+            methodSignatureInfo.ArgumentTypes.Add(parameter.Type?.ToString() ?? string.Empty);
+        }
+        MethodSignatureInfos.Add(methodSignatureInfo);
+    }
+    public class MethodSignatureInfo {
+        public string Name { get; set; } = string.Empty;
+        public List<string> ArgumentTypes { get; set; } = new();
+    }
+    public string GetUniqueMethodName(string insertText) {
+        string methodName = insertText;
+        for(int i = 0; IsMethodNameExists(methodName); i++) {
+            methodName = $"{insertText}_{++i}";
+        }
+        return methodName;
+    }
+    private bool IsMethodNameExists(string methodName) {
+        return MethodSignatureInfos.Any(p => p.Name == methodName);
+    }
 }
+
 public class EventSyntaxRewriter : CSharpSyntaxRewriter {
-    public EventSyntaxRewriter(EventSyntaxWalker walker, Completion completion) {
+    public EventSyntaxRewriter(EventSyntaxWalker walker, string eventHandlerName, MetadataEvent metadataEvent) {
         MainClassName = walker.MainClassName;
         LeftIndentationTrivia = walker.LeftIndentationTrivia;
         RightIndentationTrivia = walker.RightIndentationTrivia;
-        this.completion = completion;
+        EventHandlerName = eventHandlerName;
+        MetadataEvent = metadataEvent;
     }
 
     private string MainClassName { get; }
     private SyntaxTriviaList LeftIndentationTrivia { get; }
     private SyntaxTriviaList RightIndentationTrivia { get; }
-    private readonly Completion completion;
+    private string EventHandlerName { get; }
+    public MetadataEvent MetadataEvent { get; }
 
     public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node) {
         if (node.Identifier.Text != MainClassName)
@@ -139,12 +178,11 @@ public class EventSyntaxRewriter : CSharpSyntaxRewriter {
         var result = node.AddMembers(method);
         return result;
     }
-    string GeneratedHandlerMethod() {
-        var metadataEvent = (MetadataEvent)completion.Data!;
-        string methodName = completion.InsertText;
-        if (metadataEvent.EventHandlerArgsSignatures.Count == 0)
+    private string GeneratedHandlerMethod() {
+        string methodName = EventHandlerName;
+        if (MetadataEvent.EventHandlerArgsSignatures.Count == 0)
             return $"private void {methodName}() {{ }}";
-        string arguments = string.Join(", ", metadataEvent.EventHandlerArgsSignatures.Select(p => $"{p.TypeName} {p.Name}"));
+        string arguments = string.Join(", ", MetadataEvent.EventHandlerArgsSignatures.Select(p => $"{p.TypeName} {p.Name}"));
         return $"private void {methodName}({arguments}) {{ }}";
     }
 }
