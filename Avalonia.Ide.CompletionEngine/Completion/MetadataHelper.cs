@@ -251,4 +251,17 @@ public class MetadataHelper
             rv[""] = Utils.AvaloniaNamespace;
         return rv;
     }
+
+    public static string GetInsertText(string insertValue, string? originalValue)
+    {
+        if (originalValue == null)
+            return insertValue;
+
+        var triggerCharacters = new[] { ':', '.' };
+        for (var i = originalValue.Length - 1; i >= 0; i--)
+            if (triggerCharacters.Contains(insertValue[i]))
+                return insertValue.Substring(i + 1);
+
+        return insertValue;
+    }
 }

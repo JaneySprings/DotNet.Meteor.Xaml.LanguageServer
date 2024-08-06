@@ -60,7 +60,7 @@ public class CompletionEngine
                     .Select(kvp =>
                         {
                             var ci = GetElementCompletationInfo(kvp.Key, kvp.Value);
-                            var insertText = GetInsertTextForValue(ci.InsertText, tagName);
+                            var insertText = MetadataHelper.GetInsertText(ci.InsertText, tagName);
                             return new Completion(insertText, insertText, CompletionKind.Class)
                             {
                                 RecommendedCursorOffset = ci.RecommendedCursorOffset,
@@ -119,7 +119,7 @@ public class CompletionEngine
                         Helper.FilterTypes(attributeName, xamlDirectiveOnly: true)
                             .Where(t => t.Value.IsValidForXamlContextFunc?.Invoke(currentAssemblyName, targetType, null) ?? true)
                             .Select(v => {
-                                var insertText = GetInsertTextForValue(v.Key, attributeName);
+                                var insertText = MetadataHelper.GetInsertText(v.Key, attributeName);
                                 return new Completion(v.Key, insertText + attributeSuffix, v.Key, CompletionKind.Namespace, v.Key.Length + attributeOffset);
                             }));
 
@@ -132,7 +132,7 @@ public class CompletionEngine
                         completions.AddRange(
                             Helper.FilterTypeNames(attributeName, withAttachedPropertiesOrEventsOnly: true)
                                 .Select(x => {
-                                    var insertText = GetInsertTextForValue(x, attributeName);
+                                    var insertText = MetadataHelper.GetInsertText(x, attributeName);
                                     return new Completion(x, insertText, string.Empty, CompletionKind.Class);
                                 }));
 
@@ -164,7 +164,7 @@ public class CompletionEngine
             else if (type != null && state.TagName != null && type.Events.FirstOrDefault(x => x.Name == state.AttributeName) != null)
             {
                 // TODO: To be implemented in the next minor release
-                var tagName = GetInsertTextForValue(state.TagName, state.TagName);
+                var tagName = MetadataHelper.GetInsertText(state.TagName, state.TagName);
                 completions.Add(new Completion("<New Event Handler>", $"{tagName}_{state.AttributeName}", CompletionKind.Snippet) {
                     Data = type.Events.First(x => x.Name == state.AttributeName)
                 });
@@ -210,7 +210,7 @@ public class CompletionEngine
                     }
 
                     completions.AddRange(Helper.FilterTypeNames(state?.AttributeValue).Select(x => {
-                        var insertText = GetInsertTextForValue(x, state?.AttributeValue);
+                        var insertText = MetadataHelper.GetInsertText(x, state?.AttributeValue);
                         return new Completion(x, insertText, string.Empty, cKind);
                     }));
                 }
@@ -230,12 +230,11 @@ public class CompletionEngine
 
                     if (state.AttributeValue.StartsWith("clr-namespace:"))
                     {
-                        var shortAttributeValue = GetInsertTextForValue(state.AttributeValue, state.AttributeValue);
                         completions.AddRange(
-                                filterNamespaces(v => v.StartsWith("clr-namespace", StringComparison.OrdinalIgnoreCase)
-                                    && v.Contains(shortAttributeValue, StringComparison.OrdinalIgnoreCase))
+                                filterNamespaces(v => v.StartsWith(state.AttributeValue, StringComparison.OrdinalIgnoreCase) 
+                                    && v.Contains(";assembly=", StringComparison.OrdinalIgnoreCase))
                                 .Select(v => {
-                                    var insertText = GetInsertTextForValue(v, state.AttributeValue);
+                                    var insertText = MetadataHelper.GetInsertText(v, state.AttributeValue);
                                     return new Completion(insertText, insertText, string.Empty, cKind);
                                 }));
                     }
@@ -244,8 +243,8 @@ public class CompletionEngine
                         if ("using:".StartsWith(state.AttributeValue))
                             completions.Add(new Completion("using:", cKind));
 
-                        if ("clr-namespace:".StartsWith(state.AttributeValue))
-                            completions.Add(new Completion("clr-namespace:", cKind));
+                        if ("clr-namespace".StartsWith(state.AttributeValue))
+                            completions.Add(new Completion("clr-namespace", cKind));
 
                         completions.AddRange(
                             filterNamespaces(
@@ -417,14 +416,6 @@ public class CompletionEngine
         return new (xamlName, insretText, default, recommendedCursorOffset, triggerCompletionAfterInsert);
     }
 
-    static string GetInsertTextForValue(string value, string? originalValue)
-    {
-        if (originalValue == null || !originalValue.Contains(':') || !value.Contains(':'))
-            return value;
-
-        return value.Split(':').Last();
-    }
-
     private void ProcessStyleSetter(string setterPropertyName, XmlParser state, List<Completion> completions, string? currentAssemblyName)
     {
         const string selectorTypes = @"(?<type>([\w|])+)|([:\.#/]\w+)";
@@ -474,7 +465,7 @@ public class CompletionEngine
 
                 completions.AddRange(Helper.FilterTypeNames(value, withAttachedPropertiesOrEventsOnly: true)
                     .Select(x => {
-                        var insertText = GetInsertTextForValue(x, value);
+                        var insertText = MetadataHelper.GetInsertText(x, value);
                         return new Completion(x, insertText, string.Empty, CompletionKind.Class);
                     }));
             }
@@ -630,7 +621,7 @@ public class CompletionEngine
             completions.AddRange(Helper.FilterTypeNames(ext.ElementName, markupExtensionsOnly: true)
                 .Select(t => t.EndsWith("Extension") ? t.Substring(0, t.Length - "Extension".Length) : t)
                 .Select(t => {
-                    var insertText = GetInsertTextForValue(t, ext.ElementName);
+                    var insertText = MetadataHelper.GetInsertText(t, ext.ElementName);
                     return new Completion(t, insertText, CompletionKind.MarkupExtension);
                 }));
         if (ext.State == MarkupExtensionParser.ParserStateType.StartAttribute ||
