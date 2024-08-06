@@ -257,7 +257,7 @@ public class MetadataHelper
         if (originalValue == null)
             return insertValue;
 
-        var triggerCharacters = new[] { ':', '.' };
+        var triggerCharacters = new[] { ':', '.', ';', '=' };
         for (var i = originalValue.Length - 1; i >= 0; i--)
             if (triggerCharacters.Contains(insertValue[i]))
                 return insertValue.Substring(i + 1);
