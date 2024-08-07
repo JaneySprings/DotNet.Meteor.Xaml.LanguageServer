@@ -38,30 +38,23 @@ public enum CompletionKind
     Name = 0x2000,
 }
 
-public record Completion(string DisplayText,
-    string InsertText,
-    string Description,
-    CompletionKind Kind,
-    int? RecommendedCursorOffset = null,
-    string? Suffix = null,
-    int? DeleteTextOffset = null,
-    byte Priority = 255
-    )
-{
-    public override string ToString() => DisplayText;
-
-    public Completion(string insertText, CompletionKind kind, string? suffix = default, byte priority = 255) :
-        this(insertText, insertText, string.Empty, kind, Suffix: suffix, Priority: priority)
-    {
-
-    }
-
-    public Completion(string displayText, string insertText, CompletionKind kind, string? suffix = default, byte priority = 255) :
-        this(displayText, insertText, string.Empty, kind, Priority: priority)
-    {
-
-    }
-
-    public bool TriggerCompletionAfterInsert { get; init; }
+public record Completion {
+    public string DisplayText { get; init; }
+    public string InsertText { get; init; }
+    public string Description { get; init; }
+    public CompletionKind Kind { get; init; }
     public object? Data { get; init; }
+    
+
+    public Completion(string insertText, CompletionKind kind) : this(insertText, insertText, string.Empty, kind) { }
+    public Completion(string displayText, string insertText, CompletionKind kind) : this(displayText, insertText, string.Empty, kind) { }
+    public Completion(string displayText, string insertText, string description, CompletionKind kind, object? data = null) {
+        DisplayText = displayText;
+        InsertText = insertText;
+        Description = description;
+        Kind = kind;
+        Data = data;
+    }
+
+    public override string ToString() => DisplayText;
 }

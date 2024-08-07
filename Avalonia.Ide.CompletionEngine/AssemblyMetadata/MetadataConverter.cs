@@ -553,9 +553,6 @@ public static class MetadataConverter
             },
             new MetadataType(typeof(System.Uri).FullName!),
             (typeType = new MetadataType(typeof(System.Type).FullName!)),
-            new MetadataType("Avalonia.Media.IBrush"),
-            new MetadataType("Avalonia.Media.Imaging.IBitmap"),
-            new MetadataType("Avalonia.Media.IImage"),
             (int32Type = new MetadataType(typeof(int).FullName!)
             {
                 HasHintValues = false,
@@ -574,18 +571,6 @@ public static class MetadataConverter
 
         var portableXamlExtTypes = new[]
         {
-            new MetadataType("StaticExtension")
-            {
-                SupportCtorArgument = MetadataTypeCtorArgument.Object,
-                HasSetProperties = true,
-                IsMarkupExtension = true,
-            },
-            new MetadataType("TypeExtension")
-            {
-                SupportCtorArgument = MetadataTypeCtorArgument.TypeAndObject,
-                HasSetProperties = true,
-                IsMarkupExtension = true,
-            },
             new MetadataType("NullExtension")
             {
                 HasSetProperties = true,
@@ -606,12 +591,12 @@ public static class MetadataConverter
             xDataType = new MetadataType("DataType")
             {
                 IsXamlDirective = true,
-                Properties = { new MetadataProperty("", typeType,null, false, false, false, true)},
+                Properties = { new MetadataProperty("", typeType, null, false, false, false, true)},
             },
             xCompiledBindings = new MetadataType("CompileBindings")
             {
                 IsXamlDirective = true,
-                Properties = { new MetadataProperty("", boolType,null, false, false, false, true)},
+                Properties = { new MetadataProperty("", boolType, null, false, false, false, true)},
             },
             new MetadataType("True")
             {
@@ -619,6 +604,11 @@ public static class MetadataConverter
                 IsMarkupExtension = true,
             },
             new MetadataType("False")
+            {
+                HasSetProperties = true,
+                IsMarkupExtension = true,
+            },
+            new MetadataType("String")
             {
                 HasSetProperties = true,
                 IsMarkupExtension = true,
@@ -678,34 +668,25 @@ public static class MetadataConverter
             bindingType.Properties.Add(new MetadataProperty("", dataContextType, bindingType, false, false, true, true));
         }
 
-// TODO: MAUI (?)
-//         //TODO: may be make it to load from assembly resources
-//         string[] commonResKeys = new string[] {
-// //common brushes
-// "ThemeBackgroundBrush","ThemeBorderLowBrush","ThemeBorderMidBrush","ThemeBorderHighBrush",
-// "ThemeControlLowBrush","ThemeControlMidBrush","ThemeControlHighBrush",
-// "ThemeControlHighlightLowBrush","ThemeControlHighlightMidBrush","ThemeControlHighlightHighBrush",
-// "ThemeForegroundBrush","ThemeForegroundLowBrush","HighlightBrush",
-// "ThemeAccentBrush","ThemeAccentBrush2","ThemeAccentBrush3","ThemeAccentBrush4",
-// "ErrorBrush","ErrorLowBrush",
-// //some other usefull
-// "ThemeBorderThickness", "ThemeDisabledOpacity",
-// "FontSizeSmall","FontSizeNormal","FontSizeLarge"
-//             };
+        //typeExtension typeName hints
+        if (types.TryGetValue("Microsoft.Maui.Controls.Xaml.TypeExtension", out MetadataType? typeExt))
+        {
+            if (typeExt.Properties.Count == 1 && typeExt.Properties[0].Name == "TypeName")
+            {
+                typeExt.Properties[0] = new MetadataProperty("TypeName", typeType, typeExt, false, false, true, true);
+            }
+        }
 
-//         if (avaloniaBaseType.TryGetValue("Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension", out MetadataType? dynRes))
-//         {
-//             dynRes.SupportCtorArgument = MetadataTypeCtorArgument.HintValues;
-//             dynRes.HasHintValues = true;
-//             dynRes.HintValues = commonResKeys;
-//         }
-
-//         if (avaloniaBaseType.TryGetValue("Avalonia.Markup.Xaml.MarkupExtensions.StaticResourceExtension", out MetadataType? stRes))
-//         {
-//             stRes.SupportCtorArgument = MetadataTypeCtorArgument.HintValues;
-//             stRes.HasHintValues = true;
-//             stRes.HintValues = commonResKeys;
-//         }
+        // Style TargetType correction
+        if (types.TryGetValue("Microsoft.Maui.Controls.Style", out MetadataType? styleType))
+        {
+            var targetTypeProp = styleType.Properties.FirstOrDefault(p => p.Name == "TargetType");
+            if (targetTypeProp != null)
+            {
+                styleType.Properties.Remove(targetTypeProp);
+                styleType.Properties.Add(targetTypeProp with { HasSetter = true });
+            }
+        }
 
         //colors
         if (types.TryGetValue("Microsoft.Maui.Graphics.Color", out MetadataType? colorType) &&

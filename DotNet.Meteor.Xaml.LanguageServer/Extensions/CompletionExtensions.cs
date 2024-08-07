@@ -22,7 +22,7 @@ public static class CompletionExtensions {
             CompletionKind.Enum => CompletionItemKind.EnumMember,
             CompletionKind.MarkupExtension => CompletionItemKind.Class,
             CompletionKind.Event => CompletionItemKind.Event,
-            CompletionKind.AttachedEvent => CompletionItemKind.Event,
+            CompletionKind.AttachedEvent => CompletionItemKind.Event, // not used
             CompletionKind.DataProperty => CompletionItemKind.Property,
             CompletionKind.TargetTypeClass => CompletionItemKind.Class,
             CompletionKind.Namespace => CompletionItemKind.Module,
@@ -42,6 +42,8 @@ public static class CompletionExtensions {
             InsertText = completion.InsertText,
             InsertTextFormat = InsertTextFormat.Snippet,
             Kind = completion.Kind.ToCompletionItemKind(),
+            Command = completion.Kind == CompletionKind.Event || completion.Kind == CompletionKind.Property 
+                ? Command.Create("editor.action.triggerSuggest") : null
         };
     }
 

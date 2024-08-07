@@ -81,8 +81,9 @@ public class MetadataHelper
         prefix ??= "";
 
         var e = _types
-            .Where(t => t.Value.IsXamlDirective == xamlDirectiveOnly && t.Key.Contains(prefix, StringComparison.OrdinalIgnoreCase))
-            .Where(x => !x.Key.Equals("ControlTemplateResult") && !x.Key.Equals("DataTemplateExtensions"));
+            .Where(t => t.Value.IsXamlDirective == xamlDirectiveOnly)
+            .Where(x => !x.Key.Equals("ControlTemplateResult") && !x.Key.Equals("DataTemplateExtensions"))
+            .Where(t => MetadataHelper.CompareTypes(t.Key, prefix));
         if (withAttachedPropertiesOrEventsOnly)
             e = e.Where(t => t.Value.HasAttachedProperties || t.Value.HasAttachedEvents);
         if (markupExtensionsOnly)
@@ -254,14 +255,23 @@ public class MetadataHelper
 
     public static string GetInsertText(string insertValue, string? originalValue)
     {
-        if (originalValue == null)
+        if (originalValue == null || !insertValue.StartsWith(originalValue, StringComparison.OrdinalIgnoreCase))
             return insertValue;
 
         var triggerCharacters = new[] { ':', '.', ';', '=' };
         for (var i = originalValue.Length - 1; i >= 0; i--)
-            if (triggerCharacters.Contains(insertValue[i]))
+            if (triggerCharacters.Contains(originalValue[i]))
                 return insertValue.Substring(i + 1);
 
         return insertValue;
+    }
+    public static bool CompareTypes(string fullType, string inputType) {
+        var fullTypeParts = fullType.Split(':');
+        var inputTypeParts = inputType.Split(':');
+
+        if (fullTypeParts.Length == 2 && inputTypeParts.Length == 2)
+            return fullTypeParts[0] == inputTypeParts[0] && fullTypeParts[1].Contains(inputTypeParts[1], StringComparison.OrdinalIgnoreCase);
+
+        return fullType.Contains(inputType, StringComparison.OrdinalIgnoreCase);
     }
 }

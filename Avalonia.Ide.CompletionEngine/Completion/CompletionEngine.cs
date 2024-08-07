@@ -53,7 +53,7 @@ public class CompletionEngine
             {
                 if (tagName.Length == 0)
                 {
-                    completions.Add(new Completion("<!-- -->", "!--$0-->", CompletionKind.Snippet) { RecommendedCursorOffset = 3 });
+                    completions.Add(new Completion("<!-- -->", "!--$0-->", CompletionKind.Snippet));
                 }
                 completions.AddRange(Helper.FilterTypes(tagName)
                     .Where(kvp => !kvp.Value.IsAbstract)
@@ -61,12 +61,7 @@ public class CompletionEngine
                         {
                             var ci = GetElementCompletationInfo(kvp.Key, kvp.Value);
                             var insertText = MetadataHelper.GetInsertText(ci.InsertText, tagName);
-                            return new Completion(insertText, insertText, CompletionKind.Class)
-                            {
-                                RecommendedCursorOffset = ci.RecommendedCursorOffset,
-                                TriggerCompletionAfterInsert = ci.TriggerCompletionAfterInsert,
-                                Description = kvp.Value.FullName
-                            };
+                            return new Completion(insertText, insertText, kvp.Value.FullName, CompletionKind.Class);
                         }));
             }
         }
@@ -117,25 +112,20 @@ public class CompletionEngine
                 {
                     completions.AddRange(
                         Helper.FilterTypes(attributeName, xamlDirectiveOnly: true)
-                            .Where(t => t.Value.IsValidForXamlContextFunc?.Invoke(currentAssemblyName, targetType, null) ?? true)
                             .Select(v => {
                                 var insertText = MetadataHelper.GetInsertText(v.Key, attributeName);
-                                return new Completion(v.Key, insertText + attributeSuffix, v.Key, CompletionKind.Namespace, v.Key.Length + attributeOffset);
+                                return new Completion(insertText, insertText + attributeSuffix, CompletionKind.Namespace);
                             }));
 
                     if (targetType.IsBindableObjectType)
                     {
                         if (string.IsNullOrEmpty(attributeName) || "xmlns".StartsWith(attributeName, StringComparison.OrdinalIgnoreCase))
                         {
-                            completions.Add(new("xmlns:", CompletionKind.Class));
+                            completions.Add(new("xmlns", CompletionKind.Class));
                         }
                         completions.AddRange(
                             Helper.FilterTypeNames(attributeName, withAttachedPropertiesOrEventsOnly: true)
-                                .Select(x => {
-                                    var insertText = MetadataHelper.GetInsertText(x, attributeName);
-                                    return new Completion(x, insertText, string.Empty, CompletionKind.Class);
-                                }));
-
+                                .Select(x => new Completion(MetadataHelper.GetInsertText(x, attributeName), CompletionKind.Class)));
                     }
                 }
             }
@@ -163,7 +153,6 @@ public class CompletionEngine
             }
             else if (type != null && state.TagName != null && type.Events.FirstOrDefault(x => x.Name == state.AttributeName) != null)
             {
-                // TODO: To be implemented in the next minor release
                 var tagName = MetadataHelper.GetInsertText(state.TagName, state.TagName);
                 completions.Add(new Completion("<New Event Handler>", $"{tagName}_{state.AttributeName}", CompletionKind.Snippet) {
                     Data = type.Events.First(x => x.Name == state.AttributeName)
@@ -200,18 +189,11 @@ public class CompletionEngine
                         completions.AddRange(GetHintCompletions(prop.Type, search, currentAssemblyName));
                     }
                 }
-                else if (prop?.Type?.Name == typeof(Type).FullName)
+                else if (prop?.Type?.FullName == typeof(Type).FullName)
                 {
-                    var cKind = CompletionKind.Class;
-                    if (state?.AttributeName?.Equals("TargetType") == true ||
-                        state?.AttributeName?.Equals("Selector") == true)
-                    {
-                        cKind |= CompletionKind.TargetTypeClass;
-                    }
-
                     completions.AddRange(Helper.FilterTypeNames(state?.AttributeValue).Select(x => {
                         var insertText = MetadataHelper.GetInsertText(x, state?.AttributeValue);
-                        return new Completion(x, insertText, string.Empty, cKind);
+                        return new Completion(insertText, CompletionKind.Class);
                     }));
                 }
                 else if ((state.AttributeName == "xmlns" || state.AttributeName?.Contains("xmlns:") == true)
@@ -264,8 +246,8 @@ public class CompletionEngine
                                                                         .Select(v => v.FullName);
                         completions.AddRange(
                                fullClassNames
-                                .Where(v => v.StartsWith(state.AttributeValue))
-                                .Select(v => new Completion(v, CompletionKind.Class | CompletionKind.TargetTypeClass)));
+                                .Where(v => v.StartsWith(state.AttributeValue, StringComparison.OrdinalIgnoreCase))
+                                .Select(v => new Completion(MetadataHelper.GetInsertText(v, state.AttributeValue), CompletionKind.Class | CompletionKind.TargetTypeClass)));
                     }
                 }
                 else if (state.TagName == "Setter" && (state.AttributeName == "Value" || state.AttributeName == "Property"))
@@ -330,7 +312,7 @@ public class CompletionEngine
         return completions
             .GroupBy(i => i.Kind, (kind, compl) =>
                 (Kind: kind, Completions: compl
-                .OrderBy(j => j.Priority).ThenBy(j => j.DisplayText)))
+                .OrderBy(j => j.DisplayText)))
             .OrderBy(i => GetCompletionPriority(i.Kind))
             .SelectMany(i => i.Completions)
             .ToList();
@@ -461,7 +443,7 @@ public class CompletionEngine
             else
             {
                 completions.AddRange(Helper.FilterPropertyNames(selectorTypeName, value, attached: false, hasSetter: true)
-                        .Select(x => new Completion(x, CompletionKind.Property)));
+                        .Select(x => new Completion(x, CompletionKind.DataProperty)));
 
                 completions.AddRange(Helper.FilterTypeNames(value, withAttachedPropertiesOrEventsOnly: true)
                     .Select(x => {
@@ -620,10 +602,7 @@ public class CompletionEngine
         if (ext.State == MarkupExtensionParser.ParserStateType.StartElement)
             completions.AddRange(Helper.FilterTypeNames(ext.ElementName, markupExtensionsOnly: true)
                 .Select(t => t.EndsWith("Extension") ? t.Substring(0, t.Length - "Extension".Length) : t)
-                .Select(t => {
-                    var insertText = MetadataHelper.GetInsertText(t, ext.ElementName);
-                    return new Completion(t, insertText, CompletionKind.MarkupExtension);
-                }));
+                .Select(t => new Completion(MetadataHelper.GetInsertText(t, ext.ElementName), CompletionKind.MarkupExtension)));
         if (ext.State == MarkupExtensionParser.ParserStateType.StartAttribute ||
             ext.State == MarkupExtensionParser.ParserStateType.InsideElement)
         {
@@ -759,6 +738,14 @@ public class CompletionEngine
             {
                 var start = data.Substring(ext.CurrentValueStart);
                 completions.AddRange(GetHintCompletions(prop.Type, start, currentAssemblyName, fullText, state));
+            } 
+            else if (prop?.Type?.FullName == typeof(Type).FullName)
+            {
+                var start = data.Substring(ext.CurrentValueStart);
+                completions.AddRange(Helper.FilterTypeNames(start).Select(x => {
+                    var insertText = MetadataHelper.GetInsertText(x, start);
+                    return new Completion(insertText, CompletionKind.Class);
+                }));
             }
         }
 
@@ -871,11 +858,7 @@ public class CompletionEngine
                                     {
                                         x += fullName.Length + 1;
                                     }
-                                    completions.AddRange(parts!.Select(p => new Completion(p.Name, CompletionKind.Name | CompletionKind.Class, p.Type?.Name)
-                                    {
-                                        RecommendedCursorOffset = (p.Name.Length + (p.Type?.Name.Length > 0 ? p.Type.Name.Length + 3 : 0)),
-                                        DeleteTextOffset = -x,
-                                    }));
+                                    completions.AddRange(parts!.Select(p => new Completion(p.Name, CompletionKind.Name | CompletionKind.Class)));
                                 }
                             }
                         }

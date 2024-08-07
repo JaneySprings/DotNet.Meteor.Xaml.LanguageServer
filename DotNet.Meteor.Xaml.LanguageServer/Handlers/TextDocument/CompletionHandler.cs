@@ -19,8 +19,7 @@ public class CompletionHandler : CompletionHandlerBase {
     protected override CompletionRegistrationOptions CreateRegistrationOptions(CompletionCapability capability, ClientCapabilities clientCapabilities) {
         return new CompletionRegistrationOptions {
             DocumentSelector = LanguageServer.SelectorFoXamlDocuments,
-            TriggerCharacters = new[] { "\'", "\"", " ", "<", ".", "[", "(", "#", "|", "/", "{", ":" },
-            AllCommitCharacters = new[] { "\n" },
+            TriggerCharacters = new[] { "\"", " ", "<", ".", "[", "(", "#", "|", "/", "{", ":" },
             ResolveProvider = true,
         };
     }
@@ -48,9 +47,6 @@ public class CompletionHandler : CompletionHandlerBase {
             : new CompletionList(completions, isIncomplete: false);
     }
     public override Task<CompletionItem> Handle(CompletionItem request, CancellationToken cancellationToken) {
-        if (request.Kind == CompletionItemKind.Event || request.Kind == CompletionItemKind.Property)
-            return Task.FromResult(request with { Command = Command.Create("editor.action.triggerSuggest") });
-
         return Task.FromResult(request);
     }
 }
