@@ -112,6 +112,7 @@ public class CompletionEngine
                 {
                     completions.AddRange(
                         Helper.FilterTypes(attributeName, xamlDirectiveOnly: true)
+                            .Where(t => t.Value.IsValidForXamlContextFunc?.Invoke(currentAssemblyName, targetType, null) ?? true)
                             .Select(v => {
                                 var insertText = MetadataHelper.GetInsertText(v.Key, attributeName);
                                 return new Completion(insertText, insertText + attributeSuffix, CompletionKind.Namespace);
