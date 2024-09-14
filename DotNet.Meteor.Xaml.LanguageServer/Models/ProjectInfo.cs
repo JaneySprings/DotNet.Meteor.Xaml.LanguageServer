@@ -1,4 +1,4 @@
-using DotNet.Meteor.Common;
+using DotNet.Meteor.Common.Extensions;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using MSBuildProject = DotNet.Meteor.Common.Project;
 using SystemPath = System.IO.Path;
