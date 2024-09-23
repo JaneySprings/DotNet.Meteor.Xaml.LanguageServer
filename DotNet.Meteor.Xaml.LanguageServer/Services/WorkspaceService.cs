@@ -30,7 +30,7 @@ public class WorkspaceService {
         }
     }
     public async Task<Metadata?> InitializeCompletionEngineAsync(DocumentUri uri) {
-        if (ProjectInfo is not { IsAssemblyExist: true })
+        if (ProjectInfo == null || !ProjectInfo.IsAssemblyExist)
             return null;
 
         if (ProjectInfo.IsAssemblyExist && CompletionMetadata == null)
@@ -44,7 +44,7 @@ public class WorkspaceService {
             return string.Empty;
 
         var configFilePath = string.Empty;
-        var directory = new DirectoryInfo(ProjectInfo.ProjectDirectory);
+        var directory = new DirectoryInfo(ProjectInfo.Directory);
         while (directory.Parent != null) {
             configFilePath = Path.Combine(directory.FullName, XamlFormatterConfigFileName);
             if (File.Exists(configFilePath))

@@ -1,40 +1,40 @@
+using DotNet.Meteor.Common;
 using DotNet.Meteor.Common.Extensions;
 using OmniSharp.Extensions.LanguageServer.Protocol;
-using MSBuildProject = DotNet.Meteor.Common.Project;
 using SystemPath = System.IO.Path;
+using SystemDirectory = System.IO.Directory;
 
 namespace DotNet.Meteor.Xaml.LanguageServer.Models;
 
-public class ProjectInfo : MSBuildProject {
-    public string ProjectDirectory => SystemPath.GetDirectoryName(Path) ?? string.Empty;
-    public string AssemblyName => SystemPath.GetFileNameWithoutExtension(AssemblyPath);
-    public bool IsAssemblyExist => !string.IsNullOrEmpty(AssemblyPath) && File.Exists(AssemblyPath);
+public class ProjectInfo : Project {
+    private string assemblyName;
+    public string AssemblyName => assemblyName;
 
-    private string? assemblyPath;
-    public string AssemblyPath {
-        get {
-            if (!string.IsNullOrEmpty(assemblyPath) && File.Exists(assemblyPath))
-                return assemblyPath;
+    private string assemblyPath;
+    public string AssemblyPath => assemblyPath;
 
-            string assemblyName = this.EvaluateProperty("AssemblyName");
-            if (string.IsNullOrEmpty(assemblyName))
-                assemblyName = SystemPath.GetFileNameWithoutExtension(Path);
+    public bool IsAssemblyExist => File.Exists(AssemblyPath);
 
-            string debugPath = SystemPath.Combine(ProjectDirectory, "bin", "Debug");
-            if (!Directory.Exists(debugPath))
-                return string.Empty;
-
-            var outputAssemblies = Directory.GetFiles(debugPath, $"{assemblyName}.dll", SearchOption.AllDirectories).Select(it => new FileInfo(it));
-            assemblyPath = outputAssemblies.OrderByDescending(it => it.LastWriteTime).FirstOrDefault()?.FullName ?? string.Empty;
-            return assemblyPath;
-        }
+    private ProjectInfo(string path) : base(path) { 
+        assemblyName = this.EvaluateProperty("AssemblyName", SystemPath.GetFileNameWithoutExtension(Path)) ?? string.Empty;
+        assemblyPath = FindAssemblyInPath(assemblyName, SystemPath.Combine(Directory, "obj", "Debug"));
+        if (string.IsNullOrEmpty(assemblyPath))
+            assemblyPath = FindAssemblyInPath(assemblyName, SystemPath.Combine(Directory, "bin", "Debug"));
     }
 
-    private ProjectInfo(string path) : base(path) { }
+    private static string FindAssemblyInPath(string assemblyName, string path) {
+        if (!SystemDirectory.Exists(path))
+            return string.Empty;
+
+        var outputAssemblies = SystemDirectory.GetFiles(path, $"{assemblyName}.dll", SearchOption.AllDirectories).Select(it => new FileInfo(it));
+        var filteredAssemblies = outputAssemblies.Where(it => File.Exists(SystemPath.Combine(it.DirectoryName!, "Microsoft.Maui.Controls.dll")));
+        var assemblyPath = filteredAssemblies.OrderByDescending(it => it.LastWriteTime).FirstOrDefault()?.FullName ?? string.Empty;
+        return assemblyPath;
+    }
 
     public static async Task<ProjectInfo?> GetProjectInfoAsync(DocumentUri uri) {
         string path = uri.GetFileSystemPath();
-        string root = Directory.GetDirectoryRoot(path);
+        string root = SystemDirectory.GetDirectoryRoot(path);
         string? current = SystemPath.GetDirectoryName(path);
 
         if (!File.Exists(path) || current == null)
