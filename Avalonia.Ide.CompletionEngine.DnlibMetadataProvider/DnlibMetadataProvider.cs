@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Avalonia.Ide.CompletionEngine.AssemblyMetadata;
@@ -9,9 +10,9 @@ namespace Avalonia.Ide.CompletionEngine.DnlibMetadataProvider;
 public class DnlibMetadataProvider : IMetadataProvider
 {
 
-    public IMetadataReaderSession GetMetadata(IEnumerable<string> paths)
+    public IMetadataReaderSession GetMetadata(string targetAssemblyPath)
     {
-        return new DnlibMetadataProviderSession(paths.ToArray());
+        return new DnlibMetadataProviderSession(targetAssemblyPath);
     }
 }
 
@@ -19,12 +20,20 @@ internal class DnlibMetadataProviderSession : IMetadataReaderSession
 {
     public string TargetAssemblyName { get; private set; }
     public IEnumerable<IAssemblyInformation> Assemblies { get; }
-    public DnlibMetadataProviderSession(string[] directoryPath)
+    public DnlibMetadataProviderSession(string targetAssemlyPath)
     {
-        TargetAssemblyName = System.Reflection.AssemblyName.GetAssemblyName(directoryPath[0]).ToString();
-        Assemblies = LoadAssemblies(directoryPath).Select(a => new AssemblyWrapper(a)).ToList();
+        TargetAssemblyName = System.Reflection.AssemblyName.GetAssemblyName(targetAssemlyPath).ToString();
+        Assemblies = LoadAssemblies(GetAssemblies(targetAssemlyPath).ToArray()).Select(a => new AssemblyWrapper(a)).ToList();
     }
 
+    private static IEnumerable<string> GetAssemblies(string path)
+    {
+        if (Path.GetDirectoryName(path) is not { } directory)
+            return Array.Empty<string>();
+
+        return Directory.GetFiles(directory).Where(f => f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+            && !DepsJsonAssemblyListLoader.IsAssemblyBlacklisted(Path.GetFileName(f)));
+    }
     private static List<AssemblyDef> LoadAssemblies(string[] lst)
     {
         AssemblyResolver asmResolver = new AssemblyResolver();

@@ -14,23 +14,12 @@ public class MetadataReader
         _provider = provider;
     }
 
-    private static IEnumerable<string> GetAssemblies(string path)
-    {
-        if (Path.GetDirectoryName(path) is not { } directory)
-        {
-            return Array.Empty<string>();
-        }
-
-        return Directory.GetFiles(directory).Where(f => f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
-            && !DepsJsonAssemblyListLoader.IsAssemblyBlacklisted(Path.GetFileName(f)));
-    }
-
     public Metadata? GetForTargetAssembly(string path)
     {
         if (!File.Exists(path))
             return null;
 
-        using var session = _provider.GetMetadata(MetadataReader.GetAssemblies(path));
+        using var session = _provider.GetMetadata(path);
         return MetadataConverter.ConvertMetadata(session);
     }
 }

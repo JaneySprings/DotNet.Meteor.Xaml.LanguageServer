@@ -5,7 +5,7 @@ namespace Avalonia.Ide.CompletionEngine.AssemblyMetadata;
 
 public interface IMetadataProvider
 {
-    IMetadataReaderSession GetMetadata(IEnumerable<string> paths);
+    IMetadataReaderSession GetMetadata(string targetAssemblyPath);
 }
 
 public interface IMetadataReaderSession : IDisposable

@@ -67,7 +67,11 @@ public static class DepsJsonAssemblyListLoader
             || dllName.StartsWith("Jsr305Binding.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.MacCatalyst.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.iOS.", StringComparison.OrdinalIgnoreCase)
-            || dllName.StartsWith("Mono.Android", StringComparison.OrdinalIgnoreCase);
+            || dllName.StartsWith("Mono.Android", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Microsoft.UI", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Microsoft.Windows", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("Microsoft.WinUI", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("WinRT.", StringComparison.OrdinalIgnoreCase);
     }
 
     public static IEnumerable<string> ParseFile(string path)
