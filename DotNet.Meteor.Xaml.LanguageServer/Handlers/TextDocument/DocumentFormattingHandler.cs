@@ -24,7 +24,7 @@ public class DocumentFormattingHandler : DocumentFormattingHandlerBase {
 
     public override Task<TextEditContainer?> Handle(DocumentFormattingParams request, CancellationToken cancellationToken) {
         var stylerService = new StylerService(
-            new StylerOptions(workspaceService.FindXamlFormatterConfigFile()),
+            new StylerOptions(workspaceService.FindXamlFormatterConfigFile(request.TextDocument.Uri)),
             new XamlLanguageOptions() { IsFormatable = true }
         );
 

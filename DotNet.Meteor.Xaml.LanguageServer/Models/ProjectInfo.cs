@@ -3,10 +3,13 @@ using DotNet.Meteor.Common.Extensions;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using SystemPath = System.IO.Path;
 using SystemDirectory = System.IO.Directory;
+using Avalonia.Ide.CompletionEngine;
 
 namespace DotNet.Meteor.Xaml.LanguageServer.Models;
 
 public class ProjectInfo : Project {
+    public Metadata? CompletionMetadata { get; set; }
+
     private string assemblyName;
     public string AssemblyName => assemblyName;
 
@@ -17,19 +20,10 @@ public class ProjectInfo : Project {
 
     private ProjectInfo(string path) : base(path) { 
         assemblyName = this.EvaluateProperty("AssemblyName", SystemPath.GetFileNameWithoutExtension(Path)) ?? string.Empty;
-        assemblyPath = FindAssemblyInPath(assemblyName, SystemPath.Combine(Directory, "obj", "Debug"));
-        if (string.IsNullOrEmpty(assemblyPath))
-            assemblyPath = FindAssemblyInPath(assemblyName, SystemPath.Combine(Directory, "bin", "Debug"));
-    }
-
-    private static string FindAssemblyInPath(string assemblyName, string path) {
-        if (!SystemDirectory.Exists(path))
-            return string.Empty;
-
-        var outputAssemblies = SystemDirectory.GetFiles(path, $"{assemblyName}.dll", SearchOption.AllDirectories).Select(it => new FileInfo(it));
+        
+        var outputAssemblies = SystemDirectory.GetFiles(Directory, $"{assemblyName}.dll", SearchOption.AllDirectories).Select(it => new FileInfo(it));
         var filteredAssemblies = outputAssemblies.Where(it => File.Exists(SystemPath.Combine(it.DirectoryName!, "Microsoft.Maui.Controls.dll")));
-        var assemblyPath = filteredAssemblies.OrderByDescending(it => it.LastWriteTime).FirstOrDefault()?.FullName ?? string.Empty;
-        return assemblyPath;
+        assemblyPath = filteredAssemblies.OrderByDescending(it => it.LastWriteTime).FirstOrDefault()?.FullName ?? string.Empty;
     }
 
     public static async Task<ProjectInfo?> GetProjectInfoAsync(DocumentUri uri) {

@@ -24,7 +24,7 @@ public class DidOpenTextDocumentHandler : DidOpenTextDocumentHandlerBase {
         var uri = request.TextDocument.Uri;
         string text = request.TextDocument.Text;
 
-        await workspaceService.InitializeAsync(uri).ConfigureAwait(false);
+        _ = await workspaceService.GetOrCreateProjectInfoAsync(uri).ConfigureAwait(false);
 
         workspaceService.BufferService.Add(uri, text);
         _ = diagnosticService.PublishDiagnosticsAsync(uri);

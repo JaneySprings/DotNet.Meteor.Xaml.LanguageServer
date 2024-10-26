@@ -15,8 +15,9 @@ public class CompletionEngine
     public MetadataHelper Helper { get; set; } = new MetadataHelper();
 
 
-    public CompletionSet? GetCompletions(Metadata metadata, string fullText, int pos, string? currentAssemblyName = null)
+    public CompletionSet? GetCompletions(Metadata metadata, string fullText, int pos)
     {
+        var currentAssemblyName = metadata.TargetAssemblyName;
         var textToCursor = fullText.Substring(0, pos);
         Helper.SetMetadata(metadata, textToCursor, currentAssemblyName);
 

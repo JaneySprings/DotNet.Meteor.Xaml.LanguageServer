@@ -343,8 +343,6 @@ public static class MetadataConverter {
         var toAdd = new List<MetadataType> {
             (boolType = new MetadataType(typeof(bool).Name!) {
                 FullName = typeof(bool).FullName!,
-                HasHintValues = true,
-                HintValues = new[] { "True", "False" }
             }),
             (typeType = new MetadataType(typeof(System.Type).Name!) {
                 FullName = typeof(System.Type).FullName!,
@@ -478,6 +476,12 @@ public static class MetadataConverter {
         {
             optionsType.HasHintValues = true;
             optionsType.HintValues = optionsType.Fields.Where(f => f.IsStatic).Select(f => f.Name).ToArray();
+        }
+        //boolean
+        if (types.TryGetValue("System.Boolean", out MetadataType? boolType))
+        {
+            boolType.HasHintValues = true;
+            boolType.HintValues = new[] { "True", "False" };
         }
 
         if (typeType != null)

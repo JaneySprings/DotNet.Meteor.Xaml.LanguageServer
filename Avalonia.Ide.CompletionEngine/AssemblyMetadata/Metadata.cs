@@ -13,6 +13,8 @@ public class Metadata
     public IReadOnlyDictionary<string, Dictionary<string, MetadataType>> Namespaces => _namespaces;
     public IReadOnlyDictionary<string, string> InverseNamespace => _inverseNamespace;
 
+    public string? TargetAssemblyName { get; set; }
+
     public void AddType(string ns, MetadataType type)
     {
         _namespaces.GetOrCreate(ns)[type.Name] = type;

@@ -9,42 +9,37 @@ namespace DotNet.Meteor.Xaml.LanguageServer.Services;
 
 public class WorkspaceService {
     private const string XamlFormatterConfigFileName = ".xamlstylerconfig";
+    private Dictionary<string, ProjectInfo> projectInfosCache = new();
 
-    public ProjectInfo? ProjectInfo { get; private set; }
     public BufferService BufferService { get; } = new();
 
-    public Task InitializeAsync(string filePath) {
-        return InitializeAsync(DocumentUri.FromFileSystemPath(filePath));
-    }
-    public async Task InitializeAsync(DocumentUri uri) {
+    public async Task<ProjectInfo?> GetOrCreateProjectInfoAsync(DocumentUri uri) {
         try {
             var projectInfo = await ProjectInfo.GetProjectInfoAsync(uri).ConfigureAwait(false);
-            if (projectInfo?.Path == ProjectInfo?.Path)
-                return;
+            if (projectInfo == null)
+                return null;
 
-            ProjectInfo = projectInfo;
-            CompletionMetadata = BuildCompletionMetadata(uri);
+            if (projectInfosCache.ContainsKey(projectInfo.Path))
+                return projectInfosCache[projectInfo.Path];
+
+            projectInfosCache[projectInfo.Path] = projectInfo;
+            projectInfo.CompletionMetadata = BuildCompletionMetadata(projectInfo);
+            return projectInfo;
         } catch (Exception e) {
-            CurrentSessionLogger.Error(e);
-            CurrentSessionLogger.Error($"Failed to initialize workspace for document: {uri}");
+            CurrentSessionLogger.Error($"Failed to initialize workspace for document '{uri}': {e}");
+            return null;
         }
     }
     public async Task<Metadata?> InitializeCompletionEngineAsync(DocumentUri uri) {
-        if (ProjectInfo == null || !ProjectInfo.IsAssemblyExist)
-            return null;
-
-        if (ProjectInfo.IsAssemblyExist && CompletionMetadata == null)
-            await InitializeAsync(uri).ConfigureAwait(false);
-
-        return CompletionMetadata;
+        var projectInfo = await GetOrCreateProjectInfoAsync(uri).ConfigureAwait(false);
+        return projectInfo?.CompletionMetadata;
     }
 
-    public string FindXamlFormatterConfigFile() {
-        if (ProjectInfo == null)
-            return string.Empty;
-
+    public string FindXamlFormatterConfigFile(DocumentUri uri) {
+        var directoryPath = Path.GetDirectoryName(uri.GetFileSystemPath())!;
+        var directory = new DirectoryInfo(directoryPath);
+    
         var configFilePath = string.Empty;
-        var directory = new DirectoryInfo(ProjectInfo.Directory);
         while (directory.Parent != null) {
             configFilePath = Path.Combine(directory.FullName, XamlFormatterConfigFileName);
             if (File.Exists(configFilePath))
@@ -56,15 +51,16 @@ public class WorkspaceService {
         return string.Empty;
     }
 
-    private Metadata? BuildCompletionMetadata(DocumentUri uri) {
-        var outputAssemblyPath = ProjectInfo?.AssemblyPath;
-        if (string.IsNullOrEmpty(outputAssemblyPath)) {
-            CurrentSessionLogger.Error($"Failed to get output assembly path for {uri}");
+    private Metadata? BuildCompletionMetadata(ProjectInfo projectInfo) {
+        var metadata = _metadataReader.GetForTargetAssembly(projectInfo.AssemblyPath);
+        if (metadata == null) {
+            CurrentSessionLogger.Error($"Failed to build completion metadata for target assembly: {projectInfo.AssemblyPath}");
             return null;
         }
-        return _metadataReader.GetForTargetAssembly(outputAssemblyPath);
+        CurrentSessionLogger.Debug($"Metadata is Initialized for project: '{projectInfo.Path}' -> '{projectInfo.AssemblyPath}'");
+        metadata.TargetAssemblyName = projectInfo.AssemblyName;
+        return metadata;
     }
 
-    public Metadata? CompletionMetadata { get; private set; }
     private readonly MetadataReader _metadataReader = new(new DnlibMetadataProvider());
 }

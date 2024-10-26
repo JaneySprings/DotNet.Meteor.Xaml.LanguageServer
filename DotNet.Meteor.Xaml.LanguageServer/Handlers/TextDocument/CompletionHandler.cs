@@ -34,7 +34,7 @@ public class CompletionHandler : CompletionHandlerBase {
         if (metadata == null)
             return new CompletionList();
 
-        var set = completionEngine?.GetCompletions(metadata!, text, text.Length, workspaceService.ProjectInfo?.AssemblyName);
+        var set = completionEngine?.GetCompletions(metadata!, text, text.Length);
         if (set?.Completions.Count == 1 && set.Completions[0].Data is MetadataEvent)
             return new CompletionList(set.Completions[0].ResolveEventCompletionItem(documentPath));
 

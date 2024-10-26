@@ -40,11 +40,10 @@ public class LanguageServer {
     private static async Task StartedHandlerAsync(ILanguageServer server, string? targetProject, CancellationToken _) {
         var clientSettings = server.Workspace.ClientSettings;
         ObserveClientProcess(clientSettings.ProcessId);
-
-        if (!string.IsNullOrEmpty(targetProject)) {
-            var workspaceService = server.Services.GetService<WorkspaceService>()!;
-            await workspaceService.InitializeAsync(targetProject).ConfigureAwait(false);
-        }
+        // if (!string.IsNullOrEmpty(targetProject)) {
+        //     var workspaceService = server.Services.GetService<WorkspaceService>()!;
+        //     await workspaceService.InitializeAsync(targetProject).ConfigureAwait(false);
+        // }
     }
     private static void ObserveClientProcess(long? pid) {
         if (pid == null || pid <= 0)

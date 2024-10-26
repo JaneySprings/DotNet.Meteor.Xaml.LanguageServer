@@ -22,9 +22,6 @@ public class DiagnosticService {
     }
 
     public Task PublishDiagnosticsAsync(DocumentUri uri) {
-        if (workspaceService.ProjectInfo == null)
-            return Task.CompletedTask;
-
         ResetCancellationToken();
         var cancellationToken = diagnosticTokenSource.Token;
         return ServerExtensions.InvokeAsync(async () => {
