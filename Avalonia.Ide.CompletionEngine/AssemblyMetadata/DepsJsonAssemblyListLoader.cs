@@ -46,16 +46,16 @@ public static class DepsJsonAssemblyListLoader
     }
 
     public static bool IsAssemblyBlacklisted(string dllName) {
-        if (
-            dllName.StartsWith("System.Runtime.dll", StringComparison.OrdinalIgnoreCase) ||
-            dllName.StartsWith("System.ComponentModel.EventBasedAsync.dll", StringComparison.OrdinalIgnoreCase) ||
-            dllName.StartsWith("System.ObjectModel.dll", StringComparison.OrdinalIgnoreCase) ||
-            dllName.StartsWith("System.Private.CoreLib.dll", StringComparison.OrdinalIgnoreCase))
+        if (dllName.StartsWith("System.Runtime.dll", StringComparison.OrdinalIgnoreCase) 
+            || dllName.StartsWith("System.ComponentModel.EventBasedAsync.dll", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("System.ObjectModel.dll", StringComparison.OrdinalIgnoreCase) 
+            || dllName.StartsWith("System.Private.CoreLib.dll", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("DevExpress.Maui", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
-        return dllName.StartsWith("System.", StringComparison.OrdinalIgnoreCase) ||
-             dllName.StartsWith("Microsoft.CSharp.", StringComparison.OrdinalIgnoreCase)
+        return dllName.StartsWith("System.", StringComparison.OrdinalIgnoreCase) 
+            || dllName.StartsWith("Microsoft.CSharp.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.VisualBasic.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.Win32.", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.Extensions.", StringComparison.OrdinalIgnoreCase)
@@ -71,7 +71,8 @@ public static class DepsJsonAssemblyListLoader
             || dllName.StartsWith("Microsoft.UI", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.Windows", StringComparison.OrdinalIgnoreCase)
             || dllName.StartsWith("Microsoft.WinUI", StringComparison.OrdinalIgnoreCase)
-            || dllName.StartsWith("WinRT.", StringComparison.OrdinalIgnoreCase);
+            || dllName.StartsWith("WinRT.", StringComparison.OrdinalIgnoreCase)
+            || dllName.StartsWith("DevExpress.", StringComparison.OrdinalIgnoreCase);
     }
 
     public static IEnumerable<string> ParseFile(string path)
